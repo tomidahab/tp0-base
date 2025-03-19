@@ -3,6 +3,7 @@ import yaml
 
 def generar_docker_compose(nombre_archivo, cantidad_clientes):
     compose_dict = {
+        'version': "3.9",
         'name': 'tp0',
         'services': {
             'server': {
