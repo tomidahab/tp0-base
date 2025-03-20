@@ -29,6 +29,10 @@ services:
     image: server:latest
     networks:
       - testing_net
+    volumes:
+      - ./server/config.ini:/app/config/config.ini
+    ports:
+      - "12345:12345"
 
 EOL
 
@@ -45,6 +49,8 @@ for i in $(seq 1 $n_clients); do
     image: client:latest
     networks:
       - testing_net
+    volumes:
+      - ./client/config.yaml:/app/config/config.yaml
 
 EOL
 done
