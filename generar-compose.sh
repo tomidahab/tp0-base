@@ -30,7 +30,7 @@ services:
     networks:
       - testing_net
     volumes:
-      - ./server/config.ini:/app/config/config.ini
+      - ./server/config.ini:/config.ini
     ports:
       - "12345:12345"
 
@@ -50,7 +50,7 @@ for i in $(seq 1 $n_clients); do
     networks:
       - testing_net
     volumes:
-      - ./client/config.yaml:/app/config/config.yaml
+      - ./client/config.yaml:/config.yaml
 
 EOL
 done
