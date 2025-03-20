@@ -25,7 +25,6 @@ services:
     entrypoint: python /main.py
     environment:
       - PYTHONUNBUFFERED=1
-      - LOGGING_LEVEL=DEBUG
     image: server:latest
     networks:
       - testing_net
@@ -45,7 +44,6 @@ for i in $(seq 1 $n_clients); do
     entrypoint: /client
     environment:
       - CLI_ID=$i
-      - CLI_LOG_LEVEL=DEBUG
     image: client:latest
     networks:
       - testing_net
