@@ -10,6 +10,7 @@ import (
 	"syscall"
 
 	"github.com/op/go-logging"
+	"github.com/7574-sistemas-distribuidos/docker-compose-init/client/common/bet"
 )
 
 var log = logging.MustGetLogger("log")
@@ -26,13 +27,14 @@ type ClientConfig struct {
 type Client struct {
 	config ClientConfig
 	conn   net.Conn
+	bet    Bet
 }
 
 // NewClient Initializes a new client receiving the configuration
 // as a parameter
 func NewClient(config ClientConfig) *Client {
 	client := &Client{
-		config: config, stopped: false
+		config: config, stopped: false, bet: LoadBetFromEnv()
 	}
 	return client
 }
@@ -73,14 +75,35 @@ func (c *Client) StartClientLoop() {
 			return
 		}
 
+
+		messageLength, err := sendBet(c.conn, c.config.Bet, c.config.ID)
+		if err != nil {
+			log.Errorf("action: apuesta_enviada | result: fail | client_id: %v | error: %v", c.config.ID, err)
+			c.conn.Close()
+			os.Exit(1)
+		}
+
+		log.Infof("action: apuesta_enviada | result: in-progress | client_id: %v | msg_id: %v", c.config.ID, msgID)
+
+		res, err := receiveConfirmation(c.conn)
+		if res != messageLength {
+			log.Errorf("action: apuesta_enviada | result: fail | client_id: %v | error: lenght received from server is wrong", c.config.ID)
+			c.conn.Close()
+			os.Exit(1)
+		}
+
+		log.Infof("action: apuesta_enviada | result: success | dni: %s | numero: %s", c.bet.DNI, c.bet.Numero)
+
 		// TODO: Modify the send to avoid short-write
+		/*
 		fmt.Fprintf(
 			c.conn,
 			"[CLIENT %v] Message N°%v\n",
 			c.config.ID,
 			msgID,
 		)
-		msg, err := bufio.NewReader(c.conn).ReadString('\n')
+			*/
+		//msg, err := bufio.NewReader(c.conn).ReadString('\n')
 		c.conn.Close()
 
 		if c.stopped == true {
@@ -121,4 +144,14 @@ func (c *Client) Close() {
         c.conn = nil
     }
     log.Infof("action: shutdown | result: success | client_id: %v", c.config.ID)
+}
+
+func LoadBetFromEnv() Bet {
+	return Bet{
+		Nombre:     os.Getenv("NOMBRE"),
+		Apellido:   os.Getenv("APELLIDO"),
+		DNI:        os.Getenv("DNI"),
+		Nacimiento: os.Getenv("NACIMIENTO"),
+		Numero:     os.Getenv("NUMERO"),
+	}
 }

@@ -1,6 +1,8 @@
 import socket
 import logging
 import signal
+import struct
+from utils import Bet, load_bets, store_bets
 
 
 class Server:
@@ -40,7 +42,7 @@ class Server:
         If a problem arises in the communication with the client, the
         client socket will also be closed
         """
-        try:
+        """try:
             # TODO: Modify the receive to avoid short-reads
             msg = client_sock.recv(1024).rstrip().decode('utf-8')
             addr = client_sock.getpeername()
@@ -50,7 +52,61 @@ class Server:
         except OSError as e:
             logging.error("action: receive_message | result: fail | error: {e}")
         finally:
+            client_sock.close()"""
+        try:
+            addr = client_sock.getpeername()
+            logging.info(f'action: handle_client_connection | client_ip: {addr[0]} | result: in_progress')
+
+            # Receive message length (first 2 bytes, big-endian)
+            length_bytes = self.__recv_exact(client_sock, 2)
+            if not length_bytes:
+                raise ValueError("Failed to receive message length")
+
+            # Parse the message length
+            message_length = struct.unpack('>H', length_bytes)[0]
+
+            # Receive the full message
+            message = self.__recv_exact(client_sock, message_length).decode('utf-8')
+            logging.info(f'action: receive_message | result: success | ip: {addr[0]} | msg: {message}')
+
+            agency, first_name, last_name, document, birthdate, number = message.split(",")
+            bet = Bet(agency, first_name, last_name, document, birthdate, number)
+
+            # Store the bet
+            store_bets([bet])
+            logging.info(f'action: apuesta_almacenada | result: success | dni: {bet.document} | numero: {bet.number}')
+
+            # Send back the length as confirmation (2 bytes, big-endian)
+            confirmation = struct.pack('>H', message_length)
+            self.__send_exact(client_sock, confirmation)
+            logging.info(f'action: send_confirmation | result: success | ip: {addr[0]} | length: {message_length}')
+        except Exception as e:
+            logging.error(f'action: handle_client_connection | result: fail | error: {e}')
+        finally:
             client_sock.close()
+
+    def __recv_exact(self, sock, num_bytes):
+        """
+        Receive an exact number of bytes from the socket.
+        """
+        buffer = bytearray()
+        while len(buffer) < num_bytes:
+            chunk = sock.recv(num_bytes - len(buffer))
+            if not chunk:
+                return None
+            buffer.extend(chunk)
+        return buffer
+    
+    def __send_exact(self, sock, data):
+        """
+        Send all bytes of the data to the socket.
+        """
+        total_sent = 0
+        while total_sent < len(data):
+            sent = sock.send(data[total_sent:])
+            if sent == 0:
+                raise RuntimeError("Socket connection broken")
+            total_sent += sent
 
     def __accept_new_connection(self):
         """
