@@ -56,7 +56,8 @@ func (c *Client) StartClientLoop(sigChan chan os.Signal) {
 	go func() {
 		for signal := range sigChan {
 			if signal == os.Interrupt || signal == syscall.SIGTERM {
-				c.Close()
+				c.conn.Close()
+				c.conn = nil
 				log.Infof("action: shutdown | result: success | client_id: %v | signal: %v" signal)
 				os.Exit(0)
 			}
