@@ -57,7 +57,7 @@ func (c *Client) StartClientLoop(sigChan chan os.Signal) {
 			<-sigChan
 			c.conn.Close()
 			c.conn = nil
-			log.Infof("action: shutdown | result: success | client_id: %v | signal: %v" signal)
+			log.Infof("action: shutdown | result: success | client_id: %v",c.config.ID)
 			os.Exit(0)
 	}()
 
