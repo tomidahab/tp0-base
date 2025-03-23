@@ -61,7 +61,7 @@ class Server:
         logging.info(f'action: accept_connections | result: success | ip: {addr[0]}')
         return c
 
-    def __shutdown_server(self):
+    def __shutdown_server(self, signal, s):
         logging.info('action: shutdown_server | result: in_progress')
         try:
             self._server_socket.close()
