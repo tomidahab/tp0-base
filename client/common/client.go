@@ -8,7 +8,7 @@ import (
 	"os/signal"
 	"os"
 	"syscall"
-	
+
 	"github.com/op/go-logging"
 )
 
@@ -56,13 +56,17 @@ func (c *Client) createClientSocket() error {
 // StartClientLoop Send messages to the client until some time threshold is met
 func (c *Client) StartClientLoop(sigChan chan os.Signal) {
 
-	go func() {
-			<-sigChan
-			c.conn.Close()
-			c.conn = nil
-			log.Infof("action: shutdown | result: success | client_id: %v",c.config.ID)
-			os.Exit(0)
-	}()
+    shutdown := make(chan struct{})
+    go func() {
+        <-sigChan
+        log.Infof("action: shutdown | result: in_progress | client_id: %v", c.config.ID)
+        if c.conn != nil {
+            c.conn.Close()
+        }
+        close(shutdown)
+        log.Infof("action: shutdown | result: success | client_id: %v", c.config.ID)
+        os.Exit(0)
+    }()
 
 	// There is an autoincremental msgID to identify every message sent
 	// Messages if the message amount threshold has not been surpassed
