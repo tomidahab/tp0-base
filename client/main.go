@@ -123,6 +123,7 @@ func main() {
     go func() {
         <-sigChan
         client.Close()
+		os.Exit(0)
     }()
 
 	client.StartClientLoop()

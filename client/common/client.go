@@ -61,7 +61,7 @@ func (c *Client) StartClientLoop() {
 	for msgID := 1; msgID <= c.config.LoopAmount; msgID++ {
 
 		if c.stopped == true {
-			os.Exit(1) 
+			return
 		}
 		// Create the connection the server in every loop iteration. Send an
 		if err := c.createClientSocket(); err != nil {
@@ -70,7 +70,7 @@ func (c *Client) StartClientLoop() {
 		}
 
 		if c.stopped == true {
-			os.Exit(1) 
+			return
 		}
 
 		// TODO: Modify the send to avoid short-write
@@ -84,7 +84,7 @@ func (c *Client) StartClientLoop() {
 		c.conn.Close()
 
 		if c.stopped == true {
-			os.Exit(1) 
+			return
 		}
 
 		if err != nil {
@@ -96,7 +96,7 @@ func (c *Client) StartClientLoop() {
 		}
 
 		if c.stopped == true {
-			os.Exit(1) 
+			return
 		}
 
 		log.Infof("action: receive_message | result: success | client_id: %v | msg: %v",
@@ -114,11 +114,11 @@ func (c *Client) StartClientLoop() {
 
 
 func (c *Client) Close() {
-	c.stopped = true
-	if c.conn != nil {
-		c.conn.Close()
-		c.conn = nil
-	}
-	log.Infof("action: shutdown | result: success | client_id: %v", c.config.ID)
-	os.Exit(0)
+    log.Infof("action: shutdown | result: in_progress | client_id: %v", c.config.ID)
+    c.stopped = true
+    if c.conn != nil {
+        c.conn.Close()
+        c.conn = nil
+    }
+    log.Infof("action: shutdown | result: success | client_id: %v", c.config.ID)
 }
