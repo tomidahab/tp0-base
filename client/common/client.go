@@ -54,7 +54,10 @@ func (c *Client) createClientSocket() error {
 }
 
 // StartClientLoop Send messages to the client until some time threshold is met
-func (c *Client) StartClientLoop(sigChan chan os.Signal) {
+func (c *Client) StartClientLoop() {
+
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
 
     shutdown := make(chan struct{})
     go func() {
