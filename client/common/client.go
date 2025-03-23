@@ -60,7 +60,10 @@ func (c *Client) StartClientLoop() {
 	// Messages if the message amount threshold has not been surpassed
 	for msgID := 1; msgID <= c.config.LoopAmount; msgID++ {
 		// Create the connection the server in every loop iteration. Send an
-		c.createClientSocket()
+		if err := c.createClientSocket(); err != nil {
+			log.Errorf("action: create_connection | result: fail | client_id: %v | error: %v", c.config.ID, err)
+			os.Exit(1) 
+		}
 
 		// TODO: Modify the send to avoid short-write
 		fmt.Fprintf(
@@ -77,7 +80,7 @@ func (c *Client) StartClientLoop() {
 				c.config.ID,
 				err,
 			)
-			return
+			os.Exit(1)
 		}
 
 		log.Infof("action: receive_message | result: success | client_id: %v | msg: %v",
@@ -90,11 +93,15 @@ func (c *Client) StartClientLoop() {
 
 	}
 	log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)
+	os.Exit(0)
 }
 
+
 func (c *Client) Close() {
-	c.conn.Close()
-	c.conn = nil
+	if c.conn != nil {
+		c.conn.Close()
+		c.conn = nil
+	}
 	log.Infof("action: shutdown | result: success | client_id: %v", c.config.ID)
 	os.Exit(0)
 }
