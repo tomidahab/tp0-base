@@ -61,7 +61,7 @@ class Server:
         logging.info(f'action: accept_connections | result: success | ip: {addr[0]}')
         return c
 
-    def __shutdown_server(self, signal, s):
+    def __shutdown_server(self, signum, frame):
         logging.info('action: shutdown_server | result: in_progress')
         try:
             self._server_socket.close()
@@ -70,5 +70,5 @@ class Server:
 
             logging.info('action: shutdown_server | result: success')
         except OSError as e:
-            logging.info('action: shutdown_server | result: fail | error: {e}')
+            logging.error(f'action: shutdown_server | result: fail | error: {e}')
             exit(-1)
