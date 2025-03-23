@@ -57,7 +57,7 @@ func (c *Client) createClientSocket() error {
 func (c *Client) StartClientLoop() {
 
 	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+	signal.Notify(sigChan, syscall.SIGTERM)
 
     shutdown := make(chan struct{})
     go func() {
