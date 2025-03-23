@@ -10,6 +10,7 @@ class Server:
         self._server_socket.bind(('', port))
         self._server_socket.listen(listen_backlog)
         self._client_sockets = []
+        self.running = True # to stop the server loop during shutdown
 
         signal.signal(signal.SIGTERM, self.__shutdown_server)
 
@@ -22,10 +23,14 @@ class Server:
         finishes, servers starts to accept new connections again
         """
 
-        while True:
-            client_sock = self.__accept_new_connection()
-            self._client_sockets.append(client_sock)
-            self.__handle_client_connection(client_sock)
+        while self.running:
+            try:
+                client_sock = self.__accept_new_connection()
+                self._client_sockets.append(client_sock)
+                self.__handle_client_connection(client_sock)
+            except:
+                if not self.running:
+                    return
             
 
     def __handle_client_connection(self, client_sock):
@@ -63,6 +68,7 @@ class Server:
 
     def __shutdown_server(self, signum, frame):
         logging.info('action: shutdown_server | result: in_progress')
+        self.running = False
         try:
             self._server_socket.close()
             for client_socket in self._client_sockets:
