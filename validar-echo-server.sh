@@ -1,17 +1,11 @@
 #!/bin/bash
 
-MESSAGE="Hello World!"
+MESSAGE="Mensaje de prueba"
 SERVER_PORT=12345
+SERVER_NAME="server"
+NETWORKNAME=$(docker network ls --format '{{.Name}}' | grep "testing_net" | head -n 1)
 
-docker network inspect validate_network >/dev/null 2>&1 || docker network create validate_network
-
-if ! docker ps -q -f name=server >/dev/null; then
-    docker run -d --rm --name server --network "$NETWORK_NAME" server:latest
-fi
-
-sleep 2
-
-RESPONSE=$(echo "$MESSAGE" | docker run --rm --network validate_network busybox nc server "$SERVER_PORT")
+RESPONSE=$(docker run --rm --network "$NETWORKNAME" busybox sh -c "echo '$MESSAGE' | nc $SERVER_NAME $SERVER_PORT")
 
 if [ "$RESPONSE" = "$MESSAGE" ]; then
     echo "action: test_echo_server | result: success"
