@@ -2,7 +2,7 @@ import socket
 import logging
 import signal
 import struct
-from utils import Bet, load_bets, store_bets
+from common.utils import Bet, load_bets, store_bets
 
 
 class Server:

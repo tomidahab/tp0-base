@@ -150,7 +150,7 @@ func LoadBetFromEnv() Bet {
 	return Bet{
 		Nombre:     os.Getenv("NOMBRE"),
 		Apellido:   os.Getenv("APELLIDO"),
-		DNI:        os.Getenv("DNI"),
+		DNI:        os.Getenv("DOCUMENTO"),
 		Nacimiento: os.Getenv("NACIMIENTO"),
 		Numero:     os.Getenv("NUMERO"),
 	}
