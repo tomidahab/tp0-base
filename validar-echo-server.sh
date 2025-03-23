@@ -6,7 +6,7 @@ SERVER_PORT=12345
 
 docker network inspect validate_network >/dev/null 2>&1 || docker network create validate_network
 
-docker run -d --rm --name server --network validate_network server:latest
+# docker run -d --rm --name server --network validate_network server:latest
 
 sleep 2
 
