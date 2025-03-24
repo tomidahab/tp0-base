@@ -24,21 +24,18 @@ services:
 
   client1:
     container_name: client1
-    depends_on:
-      - server
     build:
       context: .
       dockerfile: ./client/Dockerfile
+    depends_on:
+      - server
     entrypoint: /client
     environment:
       - CLI_ID=1
-      - NOMBRE=Santiago Lionel
-      - APELLIDO=Lorca
-      - DOCUMENTO=30904465
-      - NACIMIENTO=1999-03-17
-      - NUMERO=7574
     image: client:latest
     networks:
       - testing_net
     volumes:
       - ./client/config.yaml:/config.yaml
+      - ./.data/agency-1.csv:/agency-1.csv
+
