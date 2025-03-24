@@ -1,7 +1,6 @@
 import socket
 import logging
 import signal
-import struct
 from common.utils import Bet, load_bets, store_bets
 
 
@@ -76,7 +75,7 @@ class Server:
             logging.info(f'action: apuesta_almacenada | result: success | dni: {bet.document} | numero: {bet.number}')
 
             # Send back the length as confirmation (2 bytes, big-endian)
-            confirmation = struct.pack('>H', message_length) #TODO CHANGE
+            confirmation = int.to_bytes(message_length, "big")
             self.__send_exact(client_sock, confirmation)
         except Exception as e:
             logging.error(f'action: handle_client_connection | result: fail | error: {e}')
