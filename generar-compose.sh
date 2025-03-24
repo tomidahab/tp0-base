@@ -22,6 +22,9 @@ networks:
 services:
   server:
     container_name: server
+    build:
+      context: .
+      dockerfile: ./server/Dockerfile
     entrypoint: python /main.py
     environment:
       - PYTHONUNBUFFERED=1
