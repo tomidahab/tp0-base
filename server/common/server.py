@@ -75,14 +75,12 @@ class Server:
             logging.info(f'action: apuesta_almacenada | result: success | dni: {bet.document} | numero: {bet.number}')
 
             # Send back the length as confirmation (2 bytes, big-endian)
-            confirmation = int.to_bytes(message_length, "big")
+            confirmation = message_length.to_bytes(2, "big")
             self.__send_exact(client_sock, confirmation)
         except Exception as e:
             logging.error(f'action: handle_client_connection | result: fail | error: {e}')
         finally:
             client_sock.close()
-
-
 
     def __recv_exact(self, sock, num_bytes):
         """
