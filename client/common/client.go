@@ -4,6 +4,8 @@ import (
 	"net"
 	"time"
 	"os"
+	"fmt"
+	"ioutil"
 
 	"github.com/op/go-logging"
 	"github.com/7574-sistemas-distribuidos/docker-compose-init/client/common/bet"
