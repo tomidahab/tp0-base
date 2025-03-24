@@ -99,7 +99,7 @@ class Server:
         while len(buffer) < num_bytes:
             chunk = sock.recv(num_bytes - len(buffer))
             if not chunk:
-                return None
+                raise ConnectionError("Connection closed by client")
             buffer.extend(chunk)
         return buffer
     
