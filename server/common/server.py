@@ -55,12 +55,10 @@ class Server:
         try:
             addr = client_sock.getpeername()
             # logging.info(f'action: handle_client_connection | client_ip: {addr[0]} | result: in_progress')
-            logging.info(f'action: handle_client | client_ip: {addr[0]} | result: in_progress')
-
             message = self.__receive_message(client_sock)
             bet = self.__parse_and_store_bet(message)
             self.__send_confirmation(client_sock, len(message))
-            
+
         except Exception as e:
             logging.error(f'action: handle_client_connection | result: fail | error: {e}')
         finally:
