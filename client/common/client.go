@@ -18,6 +18,7 @@ type ClientConfig struct {
 	ServerAddress string
 	LoopAmount    int
 	LoopPeriod    time.Duration
+	MaxBatch      int
 }
 
 // Client Entity that encapsulates how
@@ -81,7 +82,7 @@ func (c *Client) StartClientLoop() {
 			return
 		}
 
-		if err := bet.ProcessFile(c.conn, c.config.ID, string(fileContent), 100); err != nil { //TODO cambiar el 100 por la config
+		if err := bet.ProcessFile(c.conn, c.config.ID, string(fileContent), c.config.MaxBatch); err != nil { //TODO cambiar el 100 por la config
 			log.Errorf("action: process_file | result: fail | client_id: %v | error: %v", c.config.ID, err)
 			c.conn.Close()
 			os.Exit(1)
