@@ -44,6 +44,11 @@ for i in $(seq 1 $n_clients); do
     entrypoint: /client
     environment:
       - CLI_ID=$i
+      - NOMBRE=Santiago Lionel
+      - APELLIDO=Lorca
+      - DOCUMENTO=30904465
+      - NACIMIENTO=1999-03-17
+      - NUMERO=7574
     image: client:latest
     networks:
       - testing_net
