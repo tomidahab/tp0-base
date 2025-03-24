@@ -58,7 +58,6 @@ class Server:
             message = self.__receive_message(client_sock)
             bet = self.__parse_and_store_bet(message)
             self.__send_confirmation(client_sock, len(message))
-
         except Exception as e:
             logging.error(f'action: handle_client_connection | result: fail | error: {e}')
         finally:
