@@ -1,13 +1,9 @@
 package common
 
 import (
-	"bufio"
-	"fmt"
 	"net"
 	"time"
-	"os/signal"
 	"os"
-	"syscall"
 
 	"github.com/op/go-logging"
 	"github.com/7574-sistemas-distribuidos/docker-compose-init/client/common/bet"
@@ -25,16 +21,17 @@ type ClientConfig struct {
 
 // Client Entity that encapsulates how
 type Client struct {
-	config ClientConfig
-	conn   net.Conn
-	bet    Bet
+	config  ClientConfig
+	conn    net.Conn
+	bet     bet.Bet
+	stopped bool
 }
 
 // NewClient Initializes a new client receiving the configuration
 // as a parameter
 func NewClient(config ClientConfig) *Client {
 	client := &Client{
-		config: config, stopped: false, bet: LoadBetFromEnv()
+		config: config, stopped: false, bet: LoadBetFromEnv(),
 	}
 	return client
 }
@@ -59,7 +56,6 @@ func (c *Client) createClientSocket() error {
 func (c *Client) StartClientLoop() {
 
 	log.Infof("DELETE action: startloop | result: fail | client_id: %v¿", c.config.ID)
-	fmt.Printf("holagola DELETE %d\n", messageLength)
 
 
 	// There is an autoincremental msgID to identify every message sent
@@ -81,7 +77,7 @@ func (c *Client) StartClientLoop() {
 
 		log.Infof("DELETE action: sendbet | result: inprogress | client_id: %v¿", c.config.ID)
 
-		messageLength, err := sendBet(c.conn, c.config.Bet, c.config.ID)
+		messageLength, err := bet.SendBet(c.conn, c.bet, c.config.ID)
 		if err != nil {
 			log.Errorf("action: apuesta_enviada | result: fail | client_id: %v | error: %v", c.config.ID, err)
 			c.conn.Close()
@@ -90,7 +86,7 @@ func (c *Client) StartClientLoop() {
 
 		log.Infof("action: apuesta_enviada | result: in-progress | client_id: %v | msg_id: %v", c.config.ID, msgID)
 
-		res, err := receiveConfirmation(c.conn)
+		res, err := bet.ReceiveConfirmation(c.conn)
 		if res != messageLength {
 			log.Errorf("action: apuesta_enviada | result: fail | client_id: %v | error: lenght received from server is wrong", c.config.ID)
 			c.conn.Close()
@@ -127,10 +123,10 @@ func (c *Client) StartClientLoop() {
 			return
 		}
 
-		log.Infof("action: receive_message | result: success | client_id: %v | msg: %v",
+		/*log.Infof("action: receive_message | result: success | client_id: %v | msg: %v",
 			c.config.ID,
 			msg,
-		)
+		)*/
 
 		// Wait a time between sending one message and the next one
 		time.Sleep(c.config.LoopPeriod)
@@ -151,8 +147,8 @@ func (c *Client) Close() {
     log.Infof("action: shutdown | result: success | client_id: %v", c.config.ID)
 }
 
-func LoadBetFromEnv() Bet {
-	return Bet{
+func LoadBetFromEnv() bet.Bet {
+	return bet.Bet{
 		Nombre:     os.Getenv("NOMBRE"),
 		Apellido:   os.Getenv("APELLIDO"),
 		DNI:        os.Getenv("DOCUMENTO"),
