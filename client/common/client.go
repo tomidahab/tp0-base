@@ -73,10 +73,16 @@ func (c *Client) StartClientLoop() {
 			return
 		}
 		// Create the connection the server in every loop iteration. Send an
+
+		log.Infof("DELETE about to create conn")
+
 		if err := c.createClientSocket(); err != nil {
 			log.Errorf("action: create_connection | result: fail | client_id: %v | error: %v", c.config.ID, err)
 			os.Exit(1) 
 		}
+
+		log.Infof("DELETE created conn")
+
 
 		if c.stopped == true {
 			return

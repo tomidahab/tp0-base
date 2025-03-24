@@ -113,6 +113,9 @@ func SendBatch(conn net.Conn, bets []Bet, agency string, lastBatch bool) error {
 */
 func SendBatch(conn net.Conn, bets []Bet, agency string, lastBatch bool) error {
 
+	log.Infof("DELETE sending batcg")
+
+
 	var batchMessage strings.Builder
 
 	if len(bets) == 0{
@@ -138,23 +141,37 @@ func SendBatch(conn net.Conn, bets []Bet, agency string, lastBatch bool) error {
 
 	buffer := new(bytes.Buffer)
 
+	log.Infof("DELETE writing data to send in bigendian: %v", messageLength)
+
+
 	if err := binary.Write(buffer, binary.BigEndian, uint16(messageLength)); err != nil {
 		return fmt.Errorf("failed to write message length: %v", err)
 	}
+
+	log.Infof("DELETE sent number in bigendian: %v", messageLength)
+
 
 	if _, err := buffer.Write([]byte(message)); err != nil {
 		return fmt.Errorf("failed to write batch message: %v", err)
 	}
 
+	log.Infof("DELETE sending buffer of : %v", len(bets))
+
+
 	if _, err := conn.Write(buffer.Bytes()); err != nil {
 		return fmt.Errorf("failed to send batch: %v", err)
 	}
 
+	log.Infof("DELETE sended buffer of : %v", len(bets))
+
 	len_recieved, err := ReceiveConfirmation(conn)
 
-	if err != nil || len_recieved != messageLength {
+	if err != nil || len_recieved != len(bets) {
 		return fmt.Errorf("message length received (%d) is not equal to expected (%d) or error occurred: %v", len_recieved, messageLength, err)
 	}
+
+	log.Infof("DELETE recieve conf that server received : %v", len_recieved)
+
 	
 
 	for _, bet := range bets {
@@ -175,8 +192,12 @@ func ProcessFile(conn net.Conn, agency string, fileContent string, maxBatchSize 
 		return fmt.Errorf("file is empty or has no valid bets")
 	}
 
+	log.Infof("DELETE totalBets: %v", totalBets)
+
 	var currentBatch []Bet
 	for i, line := range lines {
+		log.Infof("DELETE for n: %v, current batch size: %v", i, len(currentBatch))
+
 		parts := strings.Split(line, ",")
 		if len(parts) != 5 {
 			return fmt.Errorf("invalid bet format on line %d", i+1)
@@ -197,7 +218,7 @@ func ProcessFile(conn net.Conn, agency string, fileContent string, maxBatchSize 
 			if err := SendBatch(conn, currentBatch, agency, lastBatch); err != nil {
 				return fmt.Errorf("failed to send batch: %v", err)
 			}
-			currentBatch = nil // Resetear el batch actual.
+			currentBatch = []Bet{}
 		}
 	}
 

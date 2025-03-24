@@ -59,10 +59,6 @@ class Server:
             # Almacenar todas las apuestas recibidas
             store_bets(allBets)
             logging.info(f"action: apuesta_recibida | result: success | cantidad: {len(allBets)}")
-
-            # Enviar confirmación (por ejemplo, el total de apuestas recibidas, 2 bytes en big-endian)
-            confirmation = len(allBets).to_bytes(2, "big")
-            self.__send_exact(client_sock, confirmation)
         except Exception as e:
             logging.error(f"action: handle_client_connection | result: fail | error: {e}")
         finally:
@@ -97,6 +93,10 @@ class Server:
             lastBatch = True
             lines = lines[:-1]  # Remover la línea 'END'
             batchMessage = "\n".join(lines)
+
+        confirmation = len(lines).to_bytes(2, "big")
+        self.__send_exact(client_sock, confirmation)
+        
         return batchMessage, lastBatch
 
     def __parse_batch(self, batchMessage):
