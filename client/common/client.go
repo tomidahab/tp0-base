@@ -5,7 +5,6 @@ import (
 	"time"
 	"os"
 	"fmt"
-	"ioutil"
 
 	"github.com/op/go-logging"
 	"github.com/7574-sistemas-distribuidos/docker-compose-init/client/common/bet"
@@ -60,7 +59,7 @@ func (c *Client) StartClientLoop() {
 	fileName := fmt.Sprintf("agency-%s.csv", c.config.ID)
 
 	// Read the file content
-	fileContent, err := ioutil.ReadFile(fileName)
+	fileContent, err := os.ReadFile(fileName)
 	if err != nil {
 		log.Errorf("action: read_file | result: fail | client_id: %v | error: %v", c.config.ID, err)
 		os.Exit(1)
