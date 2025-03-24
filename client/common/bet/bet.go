@@ -33,6 +33,8 @@ func sendBet(conn net.Conn, bet Bet, agency string) (string, error) {
 
 	buffer := new(bytes.Buffer)
 
+	fmt.Printf("Sending message length: %d\n", messageLength)
+
 	// manda el long del msg en big endian
 	if err := binary.Write(buffer, binary.BigEndian, uint16(messageLength)); err != nil {
 		return "", fmt.Errorf("failed to write message length: %v", err)
@@ -47,16 +49,6 @@ func sendBet(conn net.Conn, bet Bet, agency string) (string, error) {
 	if _, err := conn.Write(buffer.Bytes()); err != nil {
 		return "", fmt.Errorf("failed to send data: %v", err)
 	}
-
-	// 
-	/*
-		response, err := bufio.NewReader(conn).ReadString('\n')
-		if err != nil {
-			return "", fmt.Errorf("failed to read response: %v", err)
-		}
-
-		return response, nil
-	*/
 
 	return messageLength, nil
 }
