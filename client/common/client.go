@@ -59,6 +59,8 @@ func (c *Client) createClientSocket() error {
 func (c *Client) StartClientLoop() {
 
 	log.Infof("DELETE action: startloop | result: fail | client_id: %v¿", c.config.ID)
+	fmt.Printf("holagola DELETE %d\n", messageLength)
+
 
 	// There is an autoincremental msgID to identify every message sent
 	// Messages if the message amount threshold has not been surpassed
