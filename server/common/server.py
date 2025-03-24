@@ -37,17 +37,15 @@ class Server:
     def __handle_client_connection(self, client_sock):
         """
         Procesa la conexión de un cliente leyendo batches de apuestas:
-          1. Lee el tamaño del batch.
-          2. Lee el contenido (dividido por líneas) y, si se encuentra 'END',
-             significa que es el último batch.
-          3. Parsea cada línea en un objeto Bet y los acumula.
-          4. Si no se recibió 'END', se repite la lectura.
-          5. Al finalizar, se almacenan todas las apuestas y se envía una confirmación.
+        1. Lee el tamaño del batch.
+        2. Lee el contenido (dividido por líneas) y, si se encuentra 'END',
+            significa que es el último batch.
+        3. Parsea cada línea en un objeto Bet y los acumula.
+        4. Si no se recibió 'END', se repite la lectura.
+        5. Al finalizar, se almacenan todas las apuestas y se envía una confirmación.
         """
+        allBets = []  # Acumula todas las apuestas recibidas
         try:
-            addr = client_sock.getpeername()
-            allBets = []  # Acumula todas las apuestas recibidas
-
             # Bucle de lectura de batches
             while True:
                 batchMessage, lastBatch = self.__read_batch(client_sock)
@@ -56,13 +54,15 @@ class Server:
                 if lastBatch:
                     break
 
-            # Almacenar todas las apuestas recibidas
             store_bets(allBets)
-            logging.info(f"action: apuesta_recibida | result: success | cantidad: {len(allBets)}")
         except Exception as e:
             logging.error(f"action: handle_client_connection | result: fail | error: {e}")
         finally:
             client_sock.close()
+
+        # Generar log consolidado al final
+        logging.info(f"action: apuesta_recibida | result: success | cantidad: {len(allBets)}")
+
 
     def __read_batch(self, client_sock):
         """
