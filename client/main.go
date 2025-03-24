@@ -106,6 +106,8 @@ func main() {
 	// Print program config with debugging purposes
 	PrintConfig(v)
 
+	log.Infof("sinowop %v", clientConfig.ID)
+
 	clientConfig := common.ClientConfig{
 		ServerAddress: v.GetString("server.address"),
 		ID:            v.GetString("id"),
@@ -113,6 +115,7 @@ func main() {
 		LoopPeriod:    v.GetDuration("loop.period"),
 	}
 	
+	log.Infof("WOOOOPO %v", clientConfig.ID)
 
 	client := common.NewClient(clientConfig)
 
