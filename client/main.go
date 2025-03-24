@@ -106,7 +106,7 @@ func main() {
 	// Print program config with debugging purposes
 	PrintConfig(v)
 
-	log.Infof("sinowop %v", clientConfig.ID)
+	log.Infof("sinowop")
 
 	clientConfig := common.ClientConfig{
 		ServerAddress: v.GetString("server.address"),
