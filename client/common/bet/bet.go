@@ -4,10 +4,14 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"io"
 	"net"
 	"strings"
+
+	"github.com/op/go-logging"
 )
+
+var log = logging.MustGetLogger("log")
+
 
 // Bet representa una apuesta.
 type Bet struct {
@@ -29,6 +33,13 @@ func makeMsg(bet Bet, agency string) string {
 		bet.Nacimiento,
 		bet.Numero,
 	)
+}
+
+func boolToInt(b bool) int {
+	if b {
+		return 1
+	}
+	return 0
 }
 
 // SendBatch envía un batch de apuestas al servidor.
@@ -85,7 +96,9 @@ func SendBatch(conn net.Conn, bets []Bet, agency string, lastBatch bool) error {
 		return fmt.Errorf("failed to send batch: %v", err)
 	}
 
-	if ReceiveConfirmation(conn) != messageLength {
+	len_recieved, err := ReceiveConfirmation(conn)
+
+	if  len_recieved != messageLength && err != nil {
 		return fmt.Errorf("message lenght received is not equal to real one")
 	}
 
