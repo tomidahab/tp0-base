@@ -4,9 +4,12 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"io"
 	"net"
+	"strings"
 )
 
+// Bet representa una apuesta.
 type Bet struct {
 	Nombre     string
 	Apellido   string
@@ -15,6 +18,7 @@ type Bet struct {
 	Numero     string
 }
 
+// makeMsg arma el mensaje individual de una apuesta.
 func makeMsg(bet Bet, agency string) string {
 	return fmt.Sprintf(
 		"%s,%s,%s,%s,%s,%s\n",
@@ -27,32 +31,110 @@ func makeMsg(bet Bet, agency string) string {
 	)
 }
 
-func SendBet(conn net.Conn, bet Bet, agency string) (int, error) {
-	message := makeMsg(bet, agency)
+// SendBatch envía un batch de apuestas al servidor.
+func SendBatch(conn net.Conn, bets []Bet, agency string, lastBatch bool) error {
+	const maxMessageSize = 8192 
+	const endSize = len("END\n")
+
+	var batchMessage strings.Builder
+	var batchMessageFuture []Bet
+	var betsSent []Bet
+	currentSize := 0
+
+	if len(bets) == 0{
+		return nil
+	}
+
+	for _, bet := range bets {
+		betMessage := makeMsg(bet, agency)
+		betSize := len(betMessage)
+
+		if currentSize+betSize+(endSize*boolToInt(lastBatch)) > maxMessageSize {
+			batchMessageFuture = append(batchMessageFuture, bet)
+		} else {
+			batchMessage.WriteString(betMessage)
+			betsSent = append(betsSent, bet)
+			currentSize += betSize
+		}
+	}
+
+	if lastBatch && len(batchMessageFuture) == 0 {
+		batchMessage.WriteString("END\n")
+	}
+	
+
+	message := batchMessage.String()
 	messageLength := len(message)
+
+	// Nunca deberia llegar aca pero lo dejo x las dudas
+	if messageLength > 0xFFFF {
+		return fmt.Errorf("batch message too large, exceeds maximum size of 65535 bytes")
+	}
 
 	buffer := new(bytes.Buffer)
 
-	fmt.Printf("Sending message length: %d\n", messageLength)
-
-	// manda el long del msg en big endian
 	if err := binary.Write(buffer, binary.BigEndian, uint16(messageLength)); err != nil {
-		return -1, fmt.Errorf("failed to write message length: %v", err)
+		return fmt.Errorf("failed to write message length: %v", err)
 	}
 
-	// escribe lo que va a mandar en el buffer
 	if _, err := buffer.Write([]byte(message)); err != nil {
-		return -1, fmt.Errorf("failed to write message data: %v", err)
+		return fmt.Errorf("failed to write batch message: %v", err)
 	}
 
-	// manda lo que esta en el buffer
 	if _, err := conn.Write(buffer.Bytes()); err != nil {
-		return -1, fmt.Errorf("failed to send data: %v", err)
+		return fmt.Errorf("failed to send batch: %v", err)
 	}
 
-	return messageLength, nil
+	if ReceiveConfirmation(conn) != messageLength {
+		return fmt.Errorf("message lenght received is not equal to real one")
+	}
+
+
+	for _, bet := range betsSent {
+		log.Infof("action: apuesta_enviada | result: success | dni: %s | numero: %s", bet.DNI, bet.Numero)
+	}
+
+	return SendBatch(conn, batchMessageFuture,agency,lastBatch)
 }
 
+
+// ProcessFile procesa el archivo de texto y envía las apuestas en batchs.
+func ProcessFile(conn net.Conn, agency string, fileContent string, maxBatchSize int) error {
+	lines := strings.Split(strings.TrimSpace(fileContent), "\n")
+	totalBets := len(lines)
+
+	if totalBets == 0 {
+		return fmt.Errorf("file is empty or has no valid bets")
+	}
+
+	var currentBatch []Bet
+	for i, line := range lines {
+		parts := strings.Split(line, ",")
+		if len(parts) != 5 {
+			return fmt.Errorf("invalid bet format on line %d", i+1)
+		}
+
+		bet := Bet{
+			Nombre:     parts[0],
+			Apellido:   parts[1],
+			DNI:        parts[2],
+			Nacimiento: parts[3],
+			Numero:     parts[4],
+		}
+
+		currentBatch = append(currentBatch, bet)
+
+		if len(currentBatch) == maxBatchSize || i == totalBets-1 {
+			lastBatch := (i == totalBets-1)
+			if err := SendBatch(conn, currentBatch, agency, lastBatch); err != nil {
+				return fmt.Errorf("failed to send batch: %v", err)
+			}
+			currentBatch = nil // Resetear el batch actual.
+		}
+	}
+
+	return nil
+}
 
 func ReceiveConfirmation(conn net.Conn) (int, error) {
 	lengthBytes := make([]byte, 2)

@@ -36,39 +36,84 @@ class Server:
 
     def __handle_client_connection(self, client_sock):
         """
-        Read message from a specific client socket and closes the socket
-
-        If a problem arises in the communication with the client, the
-        client socket will also be closed
+        Procesa la conexión de un cliente leyendo batches de apuestas:
+          1. Lee el tamaño del batch.
+          2. Lee el contenido (dividido por líneas) y, si se encuentra 'END',
+             significa que es el último batch.
+          3. Parsea cada línea en un objeto Bet y los acumula.
+          4. Si no se recibió 'END', se repite la lectura.
+          5. Al finalizar, se almacenan todas las apuestas y se envía una confirmación.
         """
-        """try:
-            # TODO: Modify the receive to avoid short-reads
-            msg = client_sock.recv(1024).rstrip().decode('utf-8')
-            addr = client_sock.getpeername()
-            logging.info(f'action: receive_message | result: success | ip: {addr[0]} | msg: {msg}')
-            # TODO: Modify the send to avoid short-writes
-            client_sock.send("{}\n".format(msg).encode('utf-8'))
-        except OSError as e:
-            logging.error("action: receive_message | result: fail | error: {e}")
-        finally:
-            client_sock.close()"""
         try:
             addr = client_sock.getpeername()
-            # logging.info(f'action: handle_client_connection | client_ip: {addr[0]} | result: in_progress')
+            allBets = []  # Acumula todas las apuestas recibidas
 
-            message_length = self.__recv_message_lenght(client_sock)
+            # Bucle de lectura de batches
+            while True:
+                batchMessage, lastBatch = self.__read_batch(client_sock)
+                betsInBatch = self.__parse_batch(batchMessage)
+                allBets.extend(betsInBatch)
+                if lastBatch:
+                    break
 
-            bet = self.__recv_bet(client_sock, message_length)
+            # Almacenar todas las apuestas recibidas
+            store_bets(allBets)
+            logging.info(f"action: apuesta_recibida | result: success | cantidad: {len(allBets)}")
 
-            store_bets([bet])
-
-            logging.info(f'action: apuesta_almacenada | result: success | dni: {bet.document} | numero: {bet.number}')
-
-            self.__send_confirmation(client_sock, message_length)
+            # Enviar confirmación (por ejemplo, el total de apuestas recibidas, 2 bytes en big-endian)
+            confirmation = len(allBets).to_bytes(2, "big")
+            self.__send_exact(client_sock, confirmation)
         except Exception as e:
-            logging.error(f'action: handle_client_connection | result: fail | error: {e}')
+            logging.error(f"action: handle_client_connection | result: fail | error: {e}")
         finally:
             client_sock.close()
+
+    def __read_batch(self, client_sock):
+        """
+        Lee un batch de apuestas:
+          - Lee el header de 2 bytes para obtener la longitud del batch.
+          - Lee el mensaje completo y lo decodifica.
+          - Si la última línea es 'END', se indica que es el último batch y se remueve esa línea.
+        Devuelve: (batchMessage, lastBatch)
+        """
+        length_bytes = self.__recv_exact(client_sock, 2)
+        if not length_bytes:
+            raise ValueError("Failed to receive message length")
+        message_length = int.from_bytes(length_bytes, "big")
+        
+        batch_bytes = self.__recv_exact(client_sock, message_length)
+        if not batch_bytes:
+            raise ValueError("Failed to receive complete batch message")
+        batchMessage = batch_bytes.decode("utf-8")
+        
+        # Separar las líneas y detectar 'END'
+        lines = batchMessage.strip().split("\n")
+        lastBatch = False
+        if len(lines) > 0 and lines[-1] == "END":
+            lastBatch = True
+            lines = lines[:-1]  # Remover la línea 'END'
+            batchMessage = "\n".join(lines)
+        return batchMessage, lastBatch
+
+    def __parse_batch(self, batchMessage):
+        """
+        Parsea el contenido de un batch (cadena de texto) en una lista de objetos Bet.
+        Se espera que cada línea tenga 6 campos separados por comas:
+            agency, first_name, last_name, document, birthdate, number
+        """
+        bets = []
+        lines = batchMessage.strip().split("\n")
+        for line in lines:
+            trimmed = line.strip()
+            if trimmed == "":
+                continue
+            parts = trimmed.split(",")
+            if len(parts) != 6:
+                raise ValueError(f"Invalid bet format: {line}")
+            betObj = Bet(parts[0], parts[1], parts[2], parts[3], parts[4], parts[5])
+            bets.append(betObj)
+        return bets
+
 
     def __recv_message_lenght(self, client_sock):
         length_bytes = self.__recv_exact(client_sock, 2)

@@ -54,7 +54,15 @@ func (c *Client) createClientSocket() error {
 
 // StartClientLoop Send messages to the client until some time threshold is met
 func (c *Client) StartClientLoop() {
+	
+	fileName := fmt.Sprintf("agency-%s.csv", c.config.ID)
 
+	// Read the file content
+	fileContent, err := ioutil.ReadFile(fileName)
+	if err != nil {
+		log.Errorf("action: read_file | result: fail | client_id: %v | error: %v", c.config.ID, err)
+		os.Exit(1)
+	}
 	// There is an autoincremental msgID to identify every message sent
 	// Messages if the message amount threshold has not been surpassed
 	for msgID := 1; msgID <= c.config.LoopAmount; msgID++ {
@@ -72,32 +80,12 @@ func (c *Client) StartClientLoop() {
 			return
 		}
 
-		messageLength, err := bet.SendBet(c.conn, c.bet, c.config.ID)
-		if err != nil {
-			log.Errorf("action: apuesta_enviada | result: fail | client_id: %v | error: %v", c.config.ID, err)
+		if err := bet.ProcessFile(c.conn, c.config.ID, string(fileContent), 100); err != nil { //TODO cambiar el 100 por la config
+			log.Errorf("action: process_file | result: fail | client_id: %v | error: %v", c.config.ID, err)
 			c.conn.Close()
 			os.Exit(1)
 		}
 
-		res, err := bet.ReceiveConfirmation(c.conn)
-		if res != messageLength {
-			log.Errorf("action: apuesta_enviada | result: fail | client_id: %v | error: lenght received from server is wrong", c.config.ID)
-			c.conn.Close()
-			os.Exit(1)
-		}
-
-		log.Infof("action: apuesta_enviada | result: success | dni: %s | numero: %s", c.bet.DNI, c.bet.Numero)
-
-		// TODO: Modify the send to avoid short-write
-		/*
-		fmt.Fprintf(
-			c.conn,
-			"[CLIENT %v] Message N°%v\n",
-			c.config.ID,
-			msgID,
-		)
-			*/
-		//msg, err := bufio.NewReader(c.conn).ReadString('\n')
 		c.conn.Close()
 
 		if c.stopped == true {
