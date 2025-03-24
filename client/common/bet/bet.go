@@ -174,9 +174,9 @@ func SendBatch(conn net.Conn, bets []Bet, agency string, lastBatch bool) error {
 
 	
 
-	for _, bet := range bets {
-		//log.Infof("action: apuesta_enviada | result: success | dni: %s | numero: %s", bet.DNI, bet.Numero) COMMENT FOR NOW
-	}
+	/*for _, bet := range bets {
+		log.Infof("action: apuesta_enviada | result: success | dni: %s | numero: %s", bet.DNI, bet.Numero) COMMENT FOR NOW
+	}*/
 
 	return nil
 }
