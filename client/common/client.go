@@ -55,9 +55,6 @@ func (c *Client) createClientSocket() error {
 // StartClientLoop Send messages to the client until some time threshold is met
 func (c *Client) StartClientLoop() {
 
-	log.Infof("DELETE action: startloop | result: fail | client_id: %v¿", c.config.ID)
-
-
 	// There is an autoincremental msgID to identify every message sent
 	// Messages if the message amount threshold has not been surpassed
 	for msgID := 1; msgID <= c.config.LoopAmount; msgID++ {
@@ -75,16 +72,12 @@ func (c *Client) StartClientLoop() {
 			return
 		}
 
-		log.Infof("DELETE action: sendbet | result: inprogress | client_id: %v¿", c.config.ID)
-
 		messageLength, err := bet.SendBet(c.conn, c.bet, c.config.ID)
 		if err != nil {
 			log.Errorf("action: apuesta_enviada | result: fail | client_id: %v | error: %v", c.config.ID, err)
 			c.conn.Close()
 			os.Exit(1)
 		}
-
-		log.Infof("action: apuesta_enviada | result: in-progress | client_id: %v | msg_id: %v", c.config.ID, msgID)
 
 		res, err := bet.ReceiveConfirmation(c.conn)
 		if res != messageLength {

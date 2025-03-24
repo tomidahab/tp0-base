@@ -57,17 +57,12 @@ class Server:
             addr = client_sock.getpeername()
             logging.info(f'action: handle_client_connection | client_ip: {addr[0]} | result: in_progress')
 
-            # Receive message length (first 2 bytes, big-endian)
-            logging.info(f'about to recieve lenght of message coming')
-
             length_bytes = self.__recv_exact(client_sock, 2)
             if not length_bytes:
                 raise ValueError("Failed to receive message length")
 
             # Parse the message length
             message_length = int.from_bytes(length_bytes, "big")
-
-            logging.info(f'NEW3 received lenght of message coming {message_length}')
 
             # Receive the full message
             message = self.__recv_exact(client_sock, message_length).decode('utf-8')
@@ -81,9 +76,8 @@ class Server:
             logging.info(f'action: apuesta_almacenada | result: success | dni: {bet.document} | numero: {bet.number}')
 
             # Send back the length as confirmation (2 bytes, big-endian)
-            confirmation = struct.pack('>H', message_length)
+            confirmation = struct.pack('>H', message_length) #TODO CHANGE
             self.__send_exact(client_sock, confirmation)
-            logging.info(f'action: send_confirmation | result: success | ip: {addr[0]} | length: {message_length}')
         except Exception as e:
             logging.error(f'action: handle_client_connection | result: fail | error: {e}')
         finally:
