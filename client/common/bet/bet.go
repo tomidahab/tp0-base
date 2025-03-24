@@ -113,7 +113,7 @@ func SendBatch(conn net.Conn, bets []Bet, agency string, lastBatch bool) error {
 */
 func SendBatch(conn net.Conn, bets []Bet, agency string, lastBatch bool) error {
 
-	log.Infof("DELETE sending batcg")
+	// log.Infof("DELETE sending batcg")
 
 
 	var batchMessage strings.Builder
@@ -141,28 +141,28 @@ func SendBatch(conn net.Conn, bets []Bet, agency string, lastBatch bool) error {
 
 	buffer := new(bytes.Buffer)
 
-	log.Infof("DELETE writing data to send in bigendian: %v", messageLength)
+	// log.Infof("DELETE writing data to send in bigendian: %v", messageLength)
 
 
 	if err := binary.Write(buffer, binary.BigEndian, uint16(messageLength)); err != nil {
 		return fmt.Errorf("failed to write message length: %v", err)
 	}
 
-	log.Infof("DELETE sent number in bigendian: %v", messageLength)
+	// log.Infof("DELETE sent number in bigendian: %v", messageLength)
 
 
 	if _, err := buffer.Write([]byte(message)); err != nil {
 		return fmt.Errorf("failed to write batch message: %v", err)
 	}
 
-	log.Infof("DELETE sending buffer of : %v", len(bets))
+	// log.Infof("DELETE sending buffer of : %v", len(bets))
 
 
 	if _, err := conn.Write(buffer.Bytes()); err != nil {
 		return fmt.Errorf("failed to send batch: %v", err)
 	}
 
-	log.Infof("DELETE sended buffer of : %v", len(bets))
+	// log.Infof("DELETE sended buffer of : %v", len(bets))
 
 	len_recieved, err := ReceiveConfirmation(conn)
 
@@ -170,7 +170,7 @@ func SendBatch(conn net.Conn, bets []Bet, agency string, lastBatch bool) error {
 		return fmt.Errorf("message length received (%d) is not equal to expected (%d) or error occurred: %v", len_recieved, messageLength, err)
 	}
 
-	log.Infof("DELETE recieve conf that server received : %v", len_recieved)
+	// log.Infof("DELETE recieve conf that server received : %v", len_recieved)
 
 	
 
@@ -192,11 +192,11 @@ func ProcessFile(conn net.Conn, agency string, fileContent string, maxBatchSize 
 		return fmt.Errorf("file is empty or has no valid bets")
 	}
 
-	log.Infof("DELETE totalBets: %v", totalBets)
+	// log.Infof("DELETE totalBets: %v", totalBets)
 
 	var currentBatch []Bet
 	for i, line := range lines {
-		log.Infof("DELETE for n: %v, current batch size: %v", i, len(currentBatch))
+		//log.Infof("DELETE for n: %v, current batch size: %v", i, len(currentBatch))
 
 		parts := strings.Split(line, ",")
 		if len(parts) != 5 {
