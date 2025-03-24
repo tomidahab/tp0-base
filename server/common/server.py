@@ -55,41 +55,32 @@ class Server:
         try:
             addr = client_sock.getpeername()
             # logging.info(f'action: handle_client_connection | client_ip: {addr[0]} | result: in_progress')
-            message = self.__receive_message(client_sock)
-            bet = self.__parse_and_store_bet(message)
-            self.__send_confirmation(client_sock, len(message))
+
+            length_bytes = self.__recv_exact(client_sock, 2)
+            if not length_bytes:
+                raise ValueError("Failed to receive message length")
+
+            # Parse the message length
+            message_length = int.from_bytes(length_bytes, "big")
+
+            # Receive the full message
+            message = self.__recv_exact(client_sock, message_length).decode('utf-8')
+            logging.info(f'action: receive_message | result: success | ip: {addr[0]} | msg: {message}')
+
+            agency, first_name, last_name, document, birthdate, number = message.split(",")
+            bet = Bet(agency, first_name, last_name, document, birthdate, number)
+
+            # Store the bet
+            store_bets([bet])
+            logging.info(f'action: apuesta_almacenada | result: success | dni: {bet.document} | numero: {bet.number}')
+
+            # Send back the length as confirmation (2 bytes, big-endian)
+            confirmation = message_length.to_bytes(2, "big")
+            self.__send_exact(client_sock, confirmation)
         except Exception as e:
             logging.error(f'action: handle_client_connection | result: fail | error: {e}')
         finally:
             client_sock.close()
-
-    def __receive_message(self, client_sock):
-        """
-        Receive and decode a message from the client socket.
-        """
-        length_bytes = self.__recv_exact(client_sock, 2)
-        if not length_bytes:
-            raise ValueError("Failed to receive message length")
-        
-        message_length = int.from_bytes(length_bytes, "big")
-        return self.__recv_exact(client_sock, message_length).decode('utf-8')
-
-    def __parse_and_store_bet(self, message):
-        """
-        Parse the received message into a Bet object and store it.
-        """
-        agency, first_name, last_name, document, birthdate, number = message.split(",")
-        bet = Bet(agency, first_name, last_name, document, birthdate, number)
-        store_bets([bet])
-        logging.info(f'action: store_bet | result: success | dni: {bet.document} | numero: {bet.number}')
-        return bet
-
-    def __send_confirmation(self, client_sock, message_length):
-        """
-        Send confirmation back to the client as a 2-byte length.
-        """
-        confirmation = message_length.to_bytes(2, "big")
-        self.__send_exact(client_sock, confirmation)
 
     def __recv_exact(self, sock, num_bytes):
         """
@@ -99,7 +90,7 @@ class Server:
         while len(buffer) < num_bytes:
             chunk = sock.recv(num_bytes - len(buffer))
             if not chunk:
-                raise ConnectionError("Connection closed by client")
+                return None
             buffer.extend(chunk)
         return buffer
     
