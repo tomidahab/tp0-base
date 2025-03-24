@@ -63,12 +63,11 @@ class Server:
             length_bytes = self.__recv_exact(client_sock, 2)
             if not length_bytes:
                 raise ValueError("Failed to receive message length")
-            
-            logging.info(f'received lenght of message coming {length_bytes}')
-
 
             # Parse the message length
             message_length = struct.unpack('>H', length_bytes)[0]
+
+            logging.info(f'NEW received lenght of message coming {message_length}')
 
             # Receive the full message
             message = self.__recv_exact(client_sock, message_length).decode('utf-8')
