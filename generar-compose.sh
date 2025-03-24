@@ -39,6 +39,9 @@ for i in $(seq 1 $n_clients); do
     cat <<EOL >> $nombre
   client$i:
     container_name: client$i
+    build:
+      context: .
+      dockerfile: ./client/Dockerfile
     depends_on:
       - server
     entrypoint: /client
