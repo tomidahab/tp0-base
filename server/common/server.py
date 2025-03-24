@@ -55,7 +55,7 @@ class Server:
             client_sock.close()"""
         try:
             addr = client_sock.getpeername()
-            logging.info(f'action: handle_client_connection | client_ip: {addr[0]} | result: in_progress')
+            # logging.info(f'action: handle_client_connection | client_ip: {addr[0]} | result: in_progress')
 
             length_bytes = self.__recv_exact(client_sock, 2)
             if not length_bytes:
