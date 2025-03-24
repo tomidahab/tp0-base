@@ -152,9 +152,10 @@ func SendBatch(conn net.Conn, bets []Bet, agency string, lastBatch bool) error {
 
 	len_recieved, err := ReceiveConfirmation(conn)
 
-	if  len_recieved != messageLength && err != nil {
-		return fmt.Errorf("message lenght received is not equal to real one")
+	if err != nil || len_recieved != messageLength {
+		return fmt.Err("message length received (%d) is not equal to expected (%d) or error occurred: %v", len_recieved, messageLength, err)
 	}
+	
 
 	for _, bet := range bets {
 		log.Infof("action: apuesta_enviada | result: success | dni: %s | numero: %s", bet.DNI, bet.Numero)

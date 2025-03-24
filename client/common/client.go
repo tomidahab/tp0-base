@@ -90,7 +90,7 @@ func (c *Client) StartClientLoop() {
 
 		c.conn.Close()
 
-		if c.stopped == true {
+		/*if c.stopped == true {
 			return
 		}
 
@@ -100,7 +100,7 @@ func (c *Client) StartClientLoop() {
 				err,
 			)
 			os.Exit(1)
-		}
+		}*/
 
 		if c.stopped == true {
 			return
