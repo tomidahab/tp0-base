@@ -61,12 +61,10 @@ class Server:
             bet = self.__recv_bet(client_sock, message_length)
 
             store_bets([bet])
-            
+
             logging.info(f'action: apuesta_almacenada | result: success | dni: {bet.document} | numero: {bet.number}')
 
-            # Send back the length as confirmation (2 bytes, big-endian)
-            confirmation = message_length.to_bytes(2, "big")
-            self.__send_exact(client_sock, confirmation)
+            self.__send_confirmation(client_sock, message_length)
         except Exception as e:
             logging.error(f'action: handle_client_connection | result: fail | error: {e}')
         finally:
@@ -85,6 +83,10 @@ class Server:
 
         agency, first_name, last_name, document, birthdate, number = message.split(",")
         return Bet(agency, first_name, last_name, document, birthdate, number)
+
+    def __send_confirmation(self, client_sock, message_len):
+        confirmation = message_len.to_bytes(2, "big")
+        self.__send_exact(client_sock, confirmation)
 
     def __recv_exact(self, sock, num_bytes):
         """
