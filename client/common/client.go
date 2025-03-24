@@ -55,7 +55,7 @@ func (c *Client) createClientSocket() error {
 }
 
 // StartClientLoop Send messages to the client until some time threshold is met
-func (c *Client) StartClientLoop() {
+/*func (c *Client) StartClientLoop() {
 	
 	fileName := fmt.Sprintf("agency-%s.csv", c.config.ID)
 
@@ -96,26 +96,10 @@ func (c *Client) StartClientLoop() {
 
 		c.conn.Close()
 
-		/*if c.stopped == true {
-			return
-		}
-
-		if err != nil {
-			log.Errorf("action: receive_message | result: fail | client_id: %v | error: %v",
-				c.config.ID,
-				err,
-			)
-			os.Exit(1)
-		}*/
-
 		if c.stopped == true {
 			return
 		}
 
-		/*log.Infof("action: receive_message | result: success | client_id: %v | msg: %v",
-			c.config.ID,
-			msg,
-		)*/
 
 		// Wait a time between sending one message and the next one
 		time.Sleep(c.config.LoopPeriod)
@@ -123,8 +107,54 @@ func (c *Client) StartClientLoop() {
 	}
 	log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)
 	os.Exit(0)
-}
+}*/
 
+func (c *Client) StartClientLoop() {
+	
+	fileName := fmt.Sprintf("agency-%s.csv", c.config.ID)
+
+	// Read the file content
+	fileContent, err := os.ReadFile(fileName)
+	if err != nil {
+		log.Errorf("action: read_file | result: fail | client_id: %v | error: %v", c.config.ID, err)
+		os.Exit(1)
+	}
+
+	if c.stopped == true {
+		return
+	}
+	// Create the connection the server in every loop iteration. Send an
+
+	// log.Infof("DELETE about to create conn")
+
+	if err := c.createClientSocket(); err != nil {
+		log.Errorf("action: create_connection | result: fail | client_id: %v | error: %v", c.config.ID, err)
+		os.Exit(1) 
+	}
+
+	// log.Infof("DELETE created conn")
+
+
+	if c.stopped == true {
+		return
+	}
+
+	if err := bet.ProcessFile(c.conn, c.config.ID, string(fileContent), c.config.MaxBatch, c.config.LoopPeriod); err != nil { //TODO cambiar el 100 por la config
+		log.Errorf("action: process_file | result: fail | client_id: %v | error: %v", c.config.ID, err)
+		c.conn.Close()
+		os.Exit(1)
+	}
+
+	c.conn.Close()
+
+	if c.stopped == true {
+		return
+	}
+
+
+	log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)
+	os.Exit(0)
+}
 
 func (c *Client) Close() {
     log.Infof("action: shutdown | result: in_progress | client_id: %v", c.config.ID)
