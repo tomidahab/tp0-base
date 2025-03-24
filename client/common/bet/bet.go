@@ -43,6 +43,7 @@ func boolToInt(b bool) int {
 }
 
 // SendBatch envía un batch de apuestas al servidor.
+/*
 func SendBatch(conn net.Conn, bets []Bet, agency string, lastBatch bool) error {
 	const maxMessageSize = 8192 
 	const endSize = len("END\n")
@@ -59,7 +60,7 @@ func SendBatch(conn net.Conn, bets []Bet, agency string, lastBatch bool) error {
 	for _, bet := range bets {
 		betMessage := makeMsg(bet, agency)
 		betSize := len(betMessage)
-
+		
 		if currentSize+betSize+(endSize*boolToInt(lastBatch)) > maxMessageSize {
 			batchMessageFuture = append(batchMessageFuture, bet)
 		} else {
@@ -109,6 +110,59 @@ func SendBatch(conn net.Conn, bets []Bet, agency string, lastBatch bool) error {
 
 	return SendBatch(conn, batchMessageFuture,agency,lastBatch)
 }
+*/
+func SendBatch(conn net.Conn, bets []Bet, agency string, lastBatch bool) error {
+
+	var batchMessage strings.Builder
+
+	if len(bets) == 0{
+		return nil
+	}
+
+	for _, bet := range bets {
+		betMessage := makeMsg(bet, agency)
+		batchMessage.WriteString(betMessage)
+	}
+
+	if lastBatch {
+		batchMessage.WriteString("END\n")
+	}
+	
+	message := batchMessage.String()
+	messageLength := len(message)
+
+	// Nunca deberia llegar aca pero lo dejo x las dudas
+	if messageLength > 0xFFFF {
+		return fmt.Errorf("batch message too large, exceeds maximum size of 65535 bytes")
+	}
+
+	buffer := new(bytes.Buffer)
+
+	if err := binary.Write(buffer, binary.BigEndian, uint16(messageLength)); err != nil {
+		return fmt.Errorf("failed to write message length: %v", err)
+	}
+
+	if _, err := buffer.Write([]byte(message)); err != nil {
+		return fmt.Errorf("failed to write batch message: %v", err)
+	}
+
+	if _, err := conn.Write(buffer.Bytes()); err != nil {
+		return fmt.Errorf("failed to send batch: %v", err)
+	}
+
+	len_recieved, err := ReceiveConfirmation(conn)
+
+	if  len_recieved != messageLength && err != nil {
+		return fmt.Errorf("message lenght received is not equal to real one")
+	}
+
+	for _, bet := range bets {
+		log.Infof("action: apuesta_enviada | result: success | dni: %s | numero: %s", bet.DNI, bet.Numero)
+	}
+
+	return nil
+}
+
 
 
 // ProcessFile procesa el archivo de texto y envía las apuestas en batchs.
