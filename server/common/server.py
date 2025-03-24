@@ -58,11 +58,13 @@ class Server:
             logging.info(f'action: handle_client_connection | client_ip: {addr[0]} | result: in_progress')
 
             # Receive message length (first 2 bytes, big-endian)
+            logging.info(f'about to recieve lenght of message coming')
+
             length_bytes = self.__recv_exact(client_sock, 2)
             if not length_bytes:
                 raise ValueError("Failed to receive message length")
             
-            logging.debug(f'received lenght of message coming {length_bytes}')
+            logging.info(f'received lenght of message coming {length_bytes}')
 
 
             # Parse the message length

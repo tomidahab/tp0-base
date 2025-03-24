@@ -116,6 +116,7 @@ func main() {
 
 	client := common.NewClient(clientConfig)
 
+	log.Infof("DELETE new client with id %v", clientConfig.ID)
 
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGTERM)
@@ -125,6 +126,9 @@ func main() {
         client.Close()
 		os.Exit(0)
     }()
+
+	log.Infof("DELETE starting client: %v¿", clientConfig.ID)
+
 
 	client.StartClientLoop()
 }
