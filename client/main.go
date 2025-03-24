@@ -103,10 +103,20 @@ func main() {
 		log.Criticalf("%s", err)
 	}
 
+	log.Infof("sinowop22")
+
 	// Print program config with debugging purposes
 	PrintConfig(v)
 
 	log.Infof("sinowop")
+
+	log.Infof("action: config | result: success | client_id: %s | server_address: %s | loop_amount: %v | loop_period: %v | log_level: %s",
+		v.GetString("id"),
+		v.GetString("server.address"),
+		v.GetInt("loop.amount"),
+		v.GetDuration("loop.period"),
+		v.GetString("log.level"),
+	)
 
 	clientConfig := common.ClientConfig{
 		ServerAddress: v.GetString("server.address"),
