@@ -56,22 +56,12 @@ class Server:
             addr = client_sock.getpeername()
             # logging.info(f'action: handle_client_connection | client_ip: {addr[0]} | result: in_progress')
 
-            length_bytes = self.__recv_exact(client_sock, 2)
-            if not length_bytes:
-                raise ValueError("Failed to receive message length")
+            message_length = self.__recv_message_lenght(client_sock)
 
-            # Parse the message length
-            message_length = int.from_bytes(length_bytes, "big")
+            bet = self.__recv_bet(client_sock, message_length)
 
-            # Receive the full message
-            message = self.__recv_exact(client_sock, message_length).decode('utf-8')
-            logging.info(f'action: receive_message | result: success | ip: {addr[0]} | msg: {message}')
-
-            agency, first_name, last_name, document, birthdate, number = message.split(",")
-            bet = Bet(agency, first_name, last_name, document, birthdate, number)
-
-            # Store the bet
             store_bets([bet])
+            
             logging.info(f'action: apuesta_almacenada | result: success | dni: {bet.document} | numero: {bet.number}')
 
             # Send back the length as confirmation (2 bytes, big-endian)
@@ -81,6 +71,20 @@ class Server:
             logging.error(f'action: handle_client_connection | result: fail | error: {e}')
         finally:
             client_sock.close()
+
+    def __recv_message_lenght(self, client_sock):
+        length_bytes = self.__recv_exact(client_sock, 2)
+        if not length_bytes:
+            raise ValueError("Failed to receive message length")
+
+        return int.from_bytes(length_bytes, "big")
+
+    def __recv_bet(self, client_sock, message_lenght):
+        message = self.__recv_exact(client_sock, message_lenght).decode('utf-8')
+        #logging.info(f'action: receive_message | result: success | ip: {addr[0]} | msg: {message}')
+
+        agency, first_name, last_name, document, birthdate, number = message.split(",")
+        return Bet(agency, first_name, last_name, document, birthdate, number)
 
     def __recv_exact(self, sock, num_bytes):
         """
