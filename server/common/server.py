@@ -72,22 +72,18 @@ class Server:
           - Si la última línea es 'END', se indica que es el último batch y se remueve esa línea.
         Devuelve: (batchMessage, lastBatch)
         """
-        logging.info("DELETE por recibir len")
         length_bytes = self.__recv_exact(client_sock, 2)
         if not length_bytes:
             raise ValueError("Failed to receive message length")
         message_length = int.from_bytes(length_bytes, "big")
-        logging.info("DELETE len = " + str(message_length))
         
         batch_bytes = self.__recv_exact(client_sock, message_length)
         if not batch_bytes:
             raise ValueError("Failed to receive complete batch message")
         batchMessage = batch_bytes.decode("utf-8")
 
-        logging.info("recibi msg" + str(batchMessage))
 
         lines = batchMessage.strip().split("\n")
-        logging.info(str(lines))
         lastBatch = False
         if len(lines) > 0 and lines[-1] == "END":
             lastBatch = True
@@ -128,7 +124,6 @@ class Server:
 
     def __recv_bet(self, client_sock, message_lenght):
         message = self.__recv_exact(client_sock, message_lenght).decode('utf-8')
-        #logging.info(f'action: receive_message | result: success | ip: {addr[0]} | msg: {message}')
 
         agency, first_name, last_name, document, birthdate, number = message.split(",")
         return Bet(agency, first_name, last_name, document, birthdate, number)
