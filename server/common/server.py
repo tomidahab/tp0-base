@@ -5,6 +5,7 @@ import os
 from common.utils import Bet, load_bets, store_bets, has_won
 
 CLIENT_TOTAL = int(os.environ.get("CLIENT_TOTAL", 5))
+TIMEOUT = int(os.environ.get("TIMEOUT", 20))
 
 class Server:
     def __init__(self, port, listen_backlog):
@@ -233,7 +234,7 @@ class Server:
         Then prints and returns the new socket.
         """
         logging.info('action: accept_connections | result: in_progress')
-        self._server_socket.settimeout(5) #Maybe change this for an env or smt
+        self._server_socket.settimeout(TIMEOUT) #Maybe change this for an env or smt
         try:
             c, addr = self._server_socket.accept()
             logging.info(f'action: accept_connections | result: success | ip: {addr[0]}')
