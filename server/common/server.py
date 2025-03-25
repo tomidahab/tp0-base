@@ -239,7 +239,7 @@ class Server:
             self._server_socket.settimeout(None)
             return c
         except socket.timeout:
-            logging.warning("action: accept_connections | result: timeout")
+            #logging.warning("action: accept_connections | result: timeout")
             return None
 
 
