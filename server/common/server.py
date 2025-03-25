@@ -31,6 +31,8 @@ class Server:
         while self.running:
             try:
                 client_sock = self.__accept_new_connection()
+                if client_sock == None:
+                    self.__close_server
                 self._client_sockets.append(client_sock)
                 self.__handle_client_connection(client_sock)
 
@@ -221,21 +223,26 @@ class Server:
                 raise RuntimeError("Socket connection broken")
             total_sent += sent
 
+
     def __accept_new_connection(self):
         """
-        Accept new connections
-
-        Function blocks until a connection to a client is made.
-        Then connection created is printed and returned
+        Accept new connections.
+        Blocks until a connection to a client is made or timeout is reached.
+        Then prints and returns the new socket.
         """
-
-        # Connection arrived
         logging.info('action: accept_connections | result: in_progress')
-        c, addr = self._server_socket.accept()
-        logging.info(f'action: accept_connections | result: success | ip: {addr[0]}')
-        return c
+        self._server_socket.settimeout(5) #Maybe change this for an env or smt
+        try:
+            c, addr = self._server_socket.accept()
+            logging.info(f'action: accept_connections | result: success | ip: {addr[0]}')
+            self._server_socket.settimeout(None)
+            return c
+        except socket.timeout:
+            logging.warning("action: accept_connections | result: timeout")
+            return None
 
-    def __shutdown_server(self, signum, frame):
+
+    def __close_server(self):
         logging.info('action: shutdown_server | result: in_progress')
         self.running = False
         try:
@@ -247,3 +254,7 @@ class Server:
         except OSError as e:
             logging.error(f'action: shutdown_server | result: fail | error: {e}')
             exit(-1)
+
+
+    def __shutdown_server(self, signum, frame):
+        self.__close_server()
