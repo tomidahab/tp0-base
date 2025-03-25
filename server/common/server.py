@@ -128,12 +128,9 @@ class Server:
             1. Lee 2 bytes que le dan el tamaño del batch
             2. Lee esa cantidad de batchs
             3. Se fija si ese batch no tiene un END\n al final (en ese caso seria el ultimo batch)
-        Devuelve: (batchMessage, lastBatch)
+
         """
-        length_bytes = self.__recv_exact(client_sock, 2)
-        if not length_bytes:
-            raise ValueError("Failed to receive message length")
-        message_length = int.from_bytes(length_bytes, "big")
+        message_length = self.__recv_message_lenght(client_sock)
         
         batch_bytes = self.__recv_exact(client_sock, message_length)
         if not batch_bytes:
