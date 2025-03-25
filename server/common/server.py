@@ -22,28 +22,22 @@ class Server:
 
     def run(self):
         """
-        Dummy Server loop
-
-        Server that accept a new connections and establishes a
-        communication with a client. After client with communucation
-        finishes, servers starts to accept new connections again
+        Server accepts new connection and manages them one by one.
+        Once all clients have been processed, it finds the winners, and
+        shuts down itself.
         """
 
         while self.running:
             try:
                 client_sock = self.__accept_new_connection()
-                #logging.info('DELETE client socktt: ' + str(client_sock))
                 if client_sock == None:
                     self.__close_server()
                     return
                 self._client_sockets.append(client_sock)
                 self.__handle_client_connection(client_sock)
 
-                #logging.info('DELETE check if clients_ended == ' + str(CLIENT_TOTAL))
                 if self.ended_clients == CLIENT_TOTAL:
-                    #logging.info('DELETE yesss it is')
                     winners_dic = self.__find_winners()
-                    #logging.info('DELETE found winners')
                     self.__send_winners(winners_dic)
                     self.__close_sockets()
             except:
@@ -59,6 +53,7 @@ class Server:
     def __send_winners(self, winners):
         """
         Envía primero el número total de ganadores y luego, en un segundo mensaje, todos los documentos ganadores.
+        (en el caso que no haya ganadores no manda el segundo mensaje)
         """
         for agency, documents in winners.items():
             n_winners = len(documents) 
@@ -67,11 +62,9 @@ class Server:
                 sock = self.open_sockets[agency]
                 try:
                     self.__send_exact(sock, n_winners.to_bytes(4, byteorder="big"))
-                    #logging.info(f"DELETE action: send_winners_count | agency: {agency} | winners_count: {n_winners} | result: success")
                     if n_winners != 0:
                         msg = b''.join(int(document).to_bytes(4, byteorder="big") for document in documents)
                         self.__send_exact(sock, msg)
-                    #logging.info(f"DELETE action: send_winners_documents | agency: {agency} | documents_count: {n_winners} | result: success")
 
                 except Exception as e:
                     logging.error(f"action: send_winners | agency: {agency} | result: fail | error: {e}")
@@ -100,17 +93,15 @@ class Server:
 
     def __handle_client_connection(self, client_sock):
         """
-        Procesa la conexión de un cliente leyendo batches de apuestas:
-        1. Lee el tamaño del batch.
-        2. Lee el contenido (dividido por líneas) y, si se encuentra 'END',
-            significa que es el último batch.
-        3. Parsea cada línea en un objeto Bet y los acumula.
-        4. Si no se recibió 'END', se repite la lectura.
-        5. Al finalizar, se almacenan todas las apuestas y se envía una confirmación.
+        Maneja conexion del cliente
+        1. Lee el batch
+        2. Transforma cada line en un Bet
+        3. Se fija si ese batch no era el ultimo, en caso que 
+        no vuelve a 1, sino termina y guarda todos los bets.
+
         """
-        allBets = []  # Acumula todas las apuestas recibidas
+        allBets = []
         try:
-            # Bucle de lectura de batches
             while True:
                 batchMessage, lastBatch = self.__read_batch(client_sock)
                 betsInBatch = self.__parse_batch(batchMessage)
@@ -133,26 +124,19 @@ class Server:
 
     def __read_batch(self, client_sock):
         """
-        Lee un batch de apuestas:
-          - Lee el header de 2 bytes para obtener la longitud del batch.
-          - Lee el mensaje completo y lo decodifica.
-          - Si la última línea es 'END', se indica que es el último batch y se remueve esa línea.
-        Devuelve: (batchMessage, lastBatch)
+        Lee un batch de bets:
+            1. Lee 2 bytes que le dan el tamaño del batch
+            2. Lee esa cantidad de batchs
+            3. Se fija si ese batch no tiene un END\n al final (en ese caso seria el ultimo batch)
         """
-        length_bytes = self.__recv_exact(client_sock, 2)
-        if not length_bytes:
-            raise ValueError("Failed to receive message length")
-        message_length = int.from_bytes(length_bytes, "big")
+        message_length = self.__recv_message_lenght(client_sock)
         
         batch_bytes = self.__recv_exact(client_sock, message_length)
         if not batch_bytes:
             raise ValueError("Failed to receive complete batch message")
         batchMessage = batch_bytes.decode("utf-8")
 
-        #logging.info("recibi msg" + str(batchMessage))
-
         lines = batchMessage.strip().split("\n")
-        #logging.info(str(lines))
         lastBatch = False
         if len(lines) > 0 and lines[-1] == "END":
             lastBatch = True
@@ -160,8 +144,7 @@ class Server:
             batchMessage = "\n".join(lines)
             self.ended_clients += 1
 
-        confirmation = len(lines).to_bytes(2, "big")
-        self.__send_exact(client_sock, confirmation)
+        self.__send_confirmation(client_sock,message_length)
         
         return batchMessage, lastBatch
 
@@ -194,7 +177,6 @@ class Server:
 
     def __recv_bet(self, client_sock, message_lenght):
         message = self.__recv_exact(client_sock, message_lenght).decode('utf-8')
-        #logging.info(f'action: receive_message | result: success | ip: {addr[0]} | msg: {message}')
 
         agency, first_name, last_name, document, birthdate, number = message.split(",")
         return Bet(agency, first_name, last_name, document, birthdate, number)
@@ -234,14 +216,13 @@ class Server:
         Then prints and returns the new socket.
         """
         logging.info('action: accept_connections | result: in_progress')
-        self._server_socket.settimeout(TIMEOUT) #Maybe change this for an env or smt
+        self._server_socket.settimeout(TIMEOUT)
         try:
             c, addr = self._server_socket.accept()
             logging.info(f'action: accept_connections | result: success | ip: {addr[0]}')
             self._server_socket.settimeout(None)
             return c
         except socket.timeout:
-            #logging.warning("action: accept_connections | result: timeout")
             return None
 
 
@@ -250,9 +231,6 @@ class Server:
         self.running = False
         try:
             self._server_socket.close()
-            # for client_socket in self._client_sockets:
-            #    client_socket.close()
-
             logging.info('action: shutdown_server | result: success')
         except OSError as e:
             logging.error(f'action: shutdown_server | result: fail | error: {e}')
