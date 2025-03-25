@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"strings"
+	"time"
 
 	"github.com/op/go-logging"
 )
@@ -173,8 +174,8 @@ func SendBatch(conn net.Conn, bets []Bet, agency string, lastBatch bool) error {
 	if lastBatch {
 		winners, err := ReceiveWinners(conn)
 		if err != nil {
-			log.Errorf("failed to receive winners: %v", err)
-			return
+			return fmt.Errorf("failed to receive winners: %v", err)
+
 		}
 		log.Infof("action: consulta_ganadores | result: success | cant_ganadores: %v", len(winners))
 	}
@@ -193,7 +194,7 @@ func SendBatch(conn net.Conn, bets []Bet, agency string, lastBatch bool) error {
 
 
 // ProcessFile procesa el archivo de texto y envía las apuestas en batchs.
-func ProcessFile(conn net.Conn, agency string, fileContent string, maxBatchSize int, loopTime int) error {
+func ProcessFile(conn net.Conn, agency string, fileContent string, maxBatchSize int, loopTime time.Duration) error {
 	lines := strings.Split(strings.TrimSpace(fileContent), "\n")
 	totalBets := len(lines)
 
@@ -224,7 +225,7 @@ func ProcessFile(conn net.Conn, agency string, fileContent string, maxBatchSize 
 
 		if len(currentBatch) == maxBatchSize || i == totalBets-1 {
 			lastBatch := (i == totalBets-1)
-			time.Sleep(loopTime)
+			time.Sleep(time.Duration(loopTime) * time.Millisecond)
 			if err := SendBatch(conn, currentBatch, agency, lastBatch); err != nil {
 				return fmt.Errorf("failed to send batch: %v", err)
 			}
