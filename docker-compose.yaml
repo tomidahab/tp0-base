@@ -11,9 +11,13 @@ networks:
 services:
   server:
     container_name: server
+    build:
+      context: .
+      dockerfile: ./server/Dockerfile
     entrypoint: python /main.py
     environment:
       - PYTHONUNBUFFERED=1
+      - CLIENT_TOTAL=1
     image: server:latest
     networks:
       - testing_net

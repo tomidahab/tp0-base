@@ -142,28 +142,28 @@ func SendBatch(conn net.Conn, bets []Bet, agency string, lastBatch bool) error {
 
 	buffer := new(bytes.Buffer)
 
-	// log.Infof("DELETE writing data to send in bigendian: %v", messageLength)
+	//log.Infof("DELETE writing data to send in bigendian: %v", messageLength)
 
 
 	if err := binary.Write(buffer, binary.BigEndian, uint16(messageLength)); err != nil {
 		return fmt.Errorf("failed to write message length: %v", err)
 	}
 
-	// log.Infof("DELETE sent number in bigendian: %v", messageLength)
+	//log.Infof("DELETE sent number in bigendian: %v", messageLength)
 
 
 	if _, err := buffer.Write([]byte(message)); err != nil {
 		return fmt.Errorf("failed to write batch message: %v", err)
 	}
 
-	// log.Infof("DELETE sending buffer of : %v", len(bets))
+	//log.Infof("DELETE sending buffer of : %v", len(bets))
 
 
 	if _, err := conn.Write(buffer.Bytes()); err != nil {
 		return fmt.Errorf("failed to send batch: %v", err)
 	}
 
-	// log.Infof("DELETE sended buffer of : %v", len(bets))
+	//log.Infof("DELETE sended buffer of : %v", len(bets))
 
 	len_recieved, err := ReceiveConfirmation(conn)
 
@@ -180,7 +180,7 @@ func SendBatch(conn net.Conn, bets []Bet, agency string, lastBatch bool) error {
 		log.Infof("action: consulta_ganadores | result: success | cant_ganadores: %v", len(winners))
 	}
 
-	// log.Infof("DELETE recieve conf that server received : %v", len_recieved)
+	//log.Infof("DELETE recieve conf that server received : %v", len_recieved)
 
 	
 
@@ -198,11 +198,13 @@ func ProcessFile(conn net.Conn, agency string, fileContent string, maxBatchSize 
 	lines := strings.Split(strings.TrimSpace(fileContent), "\n")
 	totalBets := len(lines)
 
+	//log.Infof("DELETE read file")
+
 	if totalBets == 0 {
 		return fmt.Errorf("file is empty or has no valid bets")
 	}
 
-	// log.Infof("DELETE totalBets: %v", totalBets)
+	//log.Infof("DELETE totalBets: %v", totalBets)
 
 	var currentBatch []Bet
 	for i, line := range lines {
@@ -224,8 +226,9 @@ func ProcessFile(conn net.Conn, agency string, fileContent string, maxBatchSize 
 		currentBatch = append(currentBatch, bet)
 
 		if len(currentBatch) == maxBatchSize || i == totalBets-1 {
+			//log.Infof("DELETE reached maxbatchsize: %v", totalBets)
 			lastBatch := (i == totalBets-1)
-			time.Sleep(time.Duration(loopTime) * time.Millisecond)
+			//time.Sleep(time.Duration(loopTime) * time.Millisecond)
 			if err := SendBatch(conn, currentBatch, agency, lastBatch); err != nil {
 				return fmt.Errorf("failed to send batch: %v", err)
 			}
