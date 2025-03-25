@@ -5,7 +5,7 @@ import os
 from common.utils import Bet, load_bets, store_bets, has_won
 
 CLIENT_TOTAL = int(os.environ.get("CLIENT_TOTAL", 5))
-TIMEOUT = int(os.environ.get("TIMEOUT", 60))
+TIMEOUT = int(os.environ.get("TIMEOUT", 10))
 
 class Server:
     def __init__(self, port, listen_backlog):

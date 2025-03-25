@@ -266,7 +266,8 @@ func ReceiveWinners(conn net.Conn) ([]int, error) {
 	//log.Infof("DELETE waiting for n of winners")
 
     if _, err := conn.Read(countBytes); err != nil {
-        return nil, fmt.Errorf("failed to read winners count: %v", err)
+		return [], nil
+        //return nil, fmt.Errorf("failed to read winners count: %v", err)
     }
 
     var count uint32
