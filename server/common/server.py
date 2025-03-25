@@ -34,6 +34,7 @@ class Server:
                 #logging.info('DELETE client socktt: ' + str(client_sock))
                 if client_sock == None:
                     self.__close_server()
+                    return
                 self._client_sockets.append(client_sock)
                 self.__handle_client_connection(client_sock)
 
