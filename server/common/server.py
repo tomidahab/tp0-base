@@ -4,7 +4,7 @@ import signal
 import os
 from common.utils import Bet, load_bets, store_bets, has_won
 
-CLIENT_TOTAL = int(os.environ.get("CLIENTS_TOTAL", 5))
+CLIENT_TOTAL = int(os.environ.get("CLIENT_TOTAL", 5))
 
 class Server:
     def __init__(self, port, listen_backlog):
@@ -34,8 +34,11 @@ class Server:
                 self._client_sockets.append(client_sock)
                 self.__handle_client_connection(client_sock)
 
+                #logging.info('DELETE check if clients_ended == ' + str(CLIENT_TOTAL))
                 if self.ended_clients == CLIENT_TOTAL:
+                    #logging.info('DELETE yesss it is')
                     winners_dic = self.__find_winners()
+                    #logging.info('DELETE found winners')
                     self.__send_winners(winners_dic)
                     self.__close_sockets()
             except:
@@ -59,11 +62,11 @@ class Server:
                 sock = self.open_sockets[agency]
                 try:
                     self.__send_exact(sock, n_winners.to_bytes(4, byteorder="big"))
-                    #logging.info(f"DELETE action: send_winners_count | agency: {agency} | winners_count: {n_winners} | result: success")
+                    logging.info(f"DELETE action: send_winners_count | agency: {agency} | winners_count: {n_winners} | result: success")
 
                     msg = b''.join(int(document).to_bytes(4, byteorder="big") for document in documents)
                     self.__send_exact(sock, msg)
-                    #logging.info(f"DELETE action: send_winners_documents | agency: {agency} | documents_count: {n_winners} | result: success")
+                    logging.info(f"DELETE action: send_winners_documents | agency: {agency} | documents_count: {n_winners} | result: success")
 
                 except Exception as e:
                     logging.error(f"action: send_winners | agency: {agency} | result: fail | error: {e}")

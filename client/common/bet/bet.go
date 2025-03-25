@@ -167,12 +167,19 @@ func SendBatch(conn net.Conn, bets []Bet, agency string, lastBatch bool) error {
 
 	len_recieved, err := ReceiveConfirmation(conn)
 
+	//log.Infof("DELETE recieve conf that server received : %v", len_recieved)
+
+
 	if err != nil || len_recieved != len(bets) {
 		return fmt.Errorf("message length received (%d) is not equal to expected (%d) or error occurred: %v", len_recieved, messageLength, err)
 	}
 
 	if lastBatch {
+		//log.Infof("DELETE this is the last batch, so we are waiting for winners")
+
 		winners, err := ReceiveWinners(conn)
+		//log.Infof("DELETE received winner")
+
 		if err != nil {
 			return fmt.Errorf("failed to receive winners: %v", err)
 
@@ -180,7 +187,6 @@ func SendBatch(conn net.Conn, bets []Bet, agency string, lastBatch bool) error {
 		log.Infof("action: consulta_ganadores | result: success | cant_ganadores: %v", len(winners))
 	}
 
-	//log.Infof("DELETE recieve conf that server received : %v", len_recieved)
 
 	
 
@@ -257,6 +263,8 @@ func ReceiveConfirmation(conn net.Conn) (int, error) {
 func ReceiveWinners(conn net.Conn) ([]int, error) {
     // Leo 4 bytes del n de ganadores
     countBytes := make([]byte, 4)
+	//log.Infof("DELETE waiting for n of winners")
+
     if _, err := conn.Read(countBytes); err != nil {
         return nil, fmt.Errorf("failed to read winners count: %v", err)
     }
@@ -266,9 +274,14 @@ func ReceiveWinners(conn net.Conn) ([]int, error) {
         return nil, fmt.Errorf("failed to parse winners count: %v", err)
     }
 
+	//log.Infof("DELETE read n of winners %v", count)
+
+
     // Leo los dni de los ganadores (4 bytes por documento)
     totalBytes := int(count) * 4
     documentBytes := make([]byte, totalBytes)
+	//log.Infof("DELETE waiting for documents of winners")
+
     if _, err := conn.Read(documentBytes); err != nil {
         return nil, fmt.Errorf("failed to read winners documents: %v", err)
     }
