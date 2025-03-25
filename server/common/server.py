@@ -128,15 +128,22 @@ class Server:
             1. Lee 2 bytes que le dan el tamaño del batch
             2. Lee esa cantidad de batchs
             3. Se fija si ese batch no tiene un END\n al final (en ese caso seria el ultimo batch)
+        Devuelve: (batchMessage, lastBatch)
         """
-        message_length = self.__recv_message_lenght(client_sock)
+        length_bytes = self.__recv_exact(client_sock, 2)
+        if not length_bytes:
+            raise ValueError("Failed to receive message length")
+        message_length = int.from_bytes(length_bytes, "big")
         
         batch_bytes = self.__recv_exact(client_sock, message_length)
         if not batch_bytes:
             raise ValueError("Failed to receive complete batch message")
         batchMessage = batch_bytes.decode("utf-8")
 
+        #logging.info("recibi msg" + str(batchMessage))
+
         lines = batchMessage.strip().split("\n")
+        #logging.info(str(lines))
         lastBatch = False
         if len(lines) > 0 and lines[-1] == "END":
             lastBatch = True
@@ -144,7 +151,8 @@ class Server:
             batchMessage = "\n".join(lines)
             self.ended_clients += 1
 
-        self.__send_confirmation(client_sock,message_length)
+        confirmation = len(lines).to_bytes(2, "big")
+        self.__send_exact(client_sock, confirmation)
         
         return batchMessage, lastBatch
 
@@ -177,6 +185,7 @@ class Server:
 
     def __recv_bet(self, client_sock, message_lenght):
         message = self.__recv_exact(client_sock, message_lenght).decode('utf-8')
+        #logging.info(f'action: receive_message | result: success | ip: {addr[0]} | msg: {message}')
 
         agency, first_name, last_name, document, birthdate, number = message.split(",")
         return Bet(agency, first_name, last_name, document, birthdate, number)
@@ -216,13 +225,14 @@ class Server:
         Then prints and returns the new socket.
         """
         logging.info('action: accept_connections | result: in_progress')
-        self._server_socket.settimeout(TIMEOUT)
+        self._server_socket.settimeout(TIMEOUT) #Maybe change this for an env or smt
         try:
             c, addr = self._server_socket.accept()
             logging.info(f'action: accept_connections | result: success | ip: {addr[0]}')
             self._server_socket.settimeout(None)
             return c
         except socket.timeout:
+            #logging.warning("action: accept_connections | result: timeout")
             return None
 
 
@@ -231,6 +241,9 @@ class Server:
         self.running = False
         try:
             self._server_socket.close()
+            # for client_socket in self._client_sockets:
+            #    client_socket.close()
+
             logging.info('action: shutdown_server | result: success')
         except OSError as e:
             logging.error(f'action: shutdown_server | result: fail | error: {e}')
