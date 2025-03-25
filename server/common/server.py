@@ -68,9 +68,9 @@ class Server:
                 try:
                     self.__send_exact(sock, n_winners.to_bytes(4, byteorder="big"))
                     #logging.info(f"DELETE action: send_winners_count | agency: {agency} | winners_count: {n_winners} | result: success")
-
-                    msg = b''.join(int(document).to_bytes(4, byteorder="big") for document in documents)
-                    self.__send_exact(sock, msg)
+                    if n_winners != 0:
+                        msg = b''.join(int(document).to_bytes(4, byteorder="big") for document in documents)
+                        self.__send_exact(sock, msg)
                     #logging.info(f"DELETE action: send_winners_documents | agency: {agency} | documents_count: {n_winners} | result: success")
 
                 except Exception as e:
