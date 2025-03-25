@@ -28,6 +28,7 @@ services:
     entrypoint: python /main.py
     environment:
       - PYTHONUNBUFFERED=1
+      - CLIENT_TOTAL=$n_clients
     image: server:latest
     networks:
       - testing_net

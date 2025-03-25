@@ -170,6 +170,15 @@ func SendBatch(conn net.Conn, bets []Bet, agency string, lastBatch bool) error {
 		return fmt.Errorf("message length received (%d) is not equal to expected (%d) or error occurred: %v", len_recieved, messageLength, err)
 	}
 
+	if lastBatch {
+		winners, err := ReceiveWinners(conn)
+		if err != nil {
+			log.Errorf("failed to receive winners: %v", err)
+			return
+		}
+		log.Infof("action: consulta_ganadores | result: success | cant_ganadores: %v", len(winners))
+	}
+
 	// log.Infof("DELETE recieve conf that server received : %v", len_recieved)
 
 	
@@ -238,4 +247,33 @@ func ReceiveConfirmation(conn net.Conn) (int, error) {
 	}
 
 	return int(length), nil
+}
+
+
+func ReceiveWinners(conn net.Conn) ([]int, error) {
+    // Leo 4 bytes del n de ganadores
+    countBytes := make([]byte, 4)
+    if _, err := conn.Read(countBytes); err != nil {
+        return nil, fmt.Errorf("failed to read winners count: %v", err)
+    }
+
+    var count uint32
+    if err := binary.Read(bytes.NewReader(countBytes), binary.BigEndian, &count); err != nil {
+        return nil, fmt.Errorf("failed to parse winners count: %v", err)
+    }
+
+    // Leo los dni de los ganadores (4 bytes por documento)
+    totalBytes := int(count) * 4
+    documentBytes := make([]byte, totalBytes)
+    if _, err := conn.Read(documentBytes); err != nil {
+        return nil, fmt.Errorf("failed to read winners documents: %v", err)
+    }
+
+    // Convertir los bytes de los dni a enteros
+    winners := make([]int, count)
+    for i := 0; i < int(count); i++ {
+        winners[i] = int(binary.BigEndian.Uint32(documentBytes[i*4 : (i+1)*4]))
+    }
+
+    return winners, nil
 }

@@ -1,8 +1,10 @@
 import socket
 import logging
 import signal
-from common.utils import Bet, load_bets, store_bets
+import os
+from common.utils import Bet, load_bets, store_bets, has_won
 
+CLIENT_TOTAL = int(os.environ.get("CLIENTS_TOTAL", 5))
 
 class Server:
     def __init__(self, port, listen_backlog):
@@ -12,6 +14,8 @@ class Server:
         self._server_socket.listen(listen_backlog)
         self._client_sockets = []
         self.running = True # to stop the server loop during shutdown
+        self.ended_clients = 0
+        self.open_sockets = {}
 
         signal.signal(signal.SIGTERM, self.__shutdown_server)
 
@@ -29,10 +33,62 @@ class Server:
                 client_sock = self.__accept_new_connection()
                 self._client_sockets.append(client_sock)
                 self.__handle_client_connection(client_sock)
+
+                if self.ended_clients == CLIENT_TOTAL:
+                    winners_dic = self.__find_winners()
+                    self.__send_winners(winners_dic)
+                    self.__close_sockets()
             except:
                 if not self.running:
                     return
             
+
+    def __close_sockets(self):
+        for socket in self.open_sockets:
+            socket.close()
+
+
+    def __send_winners(self, winners):
+        """
+        Envía primero el número total de ganadores y luego, en un segundo mensaje, todos los documentos ganadores.
+        """
+        for agency, documents in winners.items():
+            n_winners = len(documents) 
+
+            if agency in self.open_sockets:
+                sock = self.open_sockets[agency]
+                try:
+                    self.__send_exact(sock, n_winners.to_bytes(4, byteorder="big"))
+                    logging.info(f"DELETE action: send_winners_count | agency: {agency} | winners_count: {n_winners} | result: success")
+
+                    msg = b''.join(int(document).to_bytes(4, byteorder="big") for document in documents)
+                    self.__send_exact(sock, msg)
+                    logging.info(f"DELETE action: send_winners_documents | agency: {agency} | documents_count: {n_winners} | result: success")
+
+                except Exception as e:
+                    logging.error(f"action: send_winners | agency: {agency} | result: fail | error: {e}")
+            else:
+                logging.warning(f"action: send_winners | agency: {agency} | result: fail | reason: no_socket")
+
+            
+
+    def __find_winners(self):
+        logging.info("action: sorteo | result: success")
+
+        winners_dic = {}
+
+        bets = load_bets()
+
+        for bet in bets:
+            if has_won(bet):
+                agency = bet.agency
+                if agency in winners_dic:
+                    winners_dic[agency].append(bet.document)
+                else:
+                    winners_dic[agency] = [bet.document]
+        
+        return winners_dic
+        
 
     def __handle_client_connection(self, client_sock):
         """
@@ -55,10 +111,13 @@ class Server:
                     break
 
             store_bets(allBets)
+
+            agency = allBets[0].agency
         except Exception as e:
             logging.error(f"action: handle_client_connection | result: fail | error: {e}")
         finally:
-            client_sock.close()
+            #client_sock.close()
+            self.open_sockets[agency] = client_sock
 
         # Generar log consolidado al final
         logging.info(f"action: apuesta_recibida | result: success | cantidad: {len(allBets)}")
@@ -93,6 +152,7 @@ class Server:
             lastBatch = True
             lines = lines[:-1]  # Remover la línea 'END'
             batchMessage = "\n".join(lines)
+            self.ended_clients += 1
 
         confirmation = len(lines).to_bytes(2, "big")
         self.__send_exact(client_sock, confirmation)
