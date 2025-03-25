@@ -239,8 +239,8 @@ class Server:
         self.running = False
         try:
             self._server_socket.close()
-            for client_socket in self._client_sockets:
-                client_socket.close()
+            # for client_socket in self._client_sockets:
+            #    client_socket.close()
 
             logging.info('action: shutdown_server | result: success')
         except OSError as e:
