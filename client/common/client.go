@@ -96,7 +96,7 @@ func (c *Client) StartClientLoop() {
 
 	time.Sleep(5 * time.Second)
 
-	os.Exit(0)
+	return
 }
 
 func (c *Client) Close() {
