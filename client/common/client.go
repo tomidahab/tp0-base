@@ -54,60 +54,6 @@ func (c *Client) createClientSocket() error {
 	return nil
 }
 
-// StartClientLoop Send messages to the client until some time threshold is met
-/*func (c *Client) StartClientLoop() {
-	
-	fileName := fmt.Sprintf("agency-%s.csv", c.config.ID)
-
-	// Read the file content
-	fileContent, err := os.ReadFile(fileName)
-	if err != nil {
-		log.Errorf("action: read_file | result: fail | client_id: %v | error: %v", c.config.ID, err)
-		os.Exit(1)
-	}
-	// There is an autoincremental msgID to identify every message sent
-	// Messages if the message amount threshold has not been surpassed
-	for msgID := 1; msgID <= c.config.LoopAmount; msgID++ {
-
-		if c.stopped == true {
-			return
-		}
-		// Create the connection the server in every loop iteration. Send an
-
-		// log.Infof("DELETE about to create conn")
-
-		if err := c.createClientSocket(); err != nil {
-			log.Errorf("action: create_connection | result: fail | client_id: %v | error: %v", c.config.ID, err)
-			os.Exit(1) 
-		}
-
-		// log.Infof("DELETE created conn")
-
-
-		if c.stopped == true {
-			return
-		}
-
-		if err := bet.ProcessFile(c.conn, c.config.ID, string(fileContent), c.config.MaxBatch); err != nil { //TODO cambiar el 100 por la config
-			log.Errorf("action: process_file | result: fail | client_id: %v | error: %v", c.config.ID, err)
-			c.conn.Close()
-			os.Exit(1)
-		}
-
-		c.conn.Close()
-
-		if c.stopped == true {
-			return
-		}
-
-
-		// Wait a time between sending one message and the next one
-		time.Sleep(c.config.LoopPeriod)
-
-	}
-	log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)
-	os.Exit(0)
-}*/
 
 func (c *Client) StartClientLoop() {
 	
@@ -123,17 +69,11 @@ func (c *Client) StartClientLoop() {
 	if c.stopped == true {
 		return
 	}
-	// Create the connection the server in every loop iteration. Send an
-
-	// log.Infof("DELETE about to create conn")
 
 	if err := c.createClientSocket(); err != nil {
 		log.Errorf("action: create_connection | result: fail | client_id: %v | error: %v", c.config.ID, err)
 		os.Exit(1) 
 	}
-
-	// log.Infof("DELETE created conn")
-
 
 	if c.stopped == true {
 		return
@@ -153,6 +93,9 @@ func (c *Client) StartClientLoop() {
 
 
 	log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)
+
+	time.Sleep(5 * time.Second)
+
 	os.Exit(0)
 }
 
