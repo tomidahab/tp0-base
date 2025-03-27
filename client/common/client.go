@@ -24,8 +24,9 @@ type ClientConfig struct {
 
 // Client Entity that encapsulates how
 type Client struct {
-	config ClientConfig
-	conn   net.Conn
+	config  ClientConfig
+	conn    net.Conn
+	stopped bool
 }
 
 // NewClient Initializes a new client receiving the configuration
