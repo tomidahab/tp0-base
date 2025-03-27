@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net"
 	"strings"
-	"time"
 
 	"github.com/op/go-logging"
 )
@@ -216,7 +215,6 @@ func ProcessFile(conn net.Conn, agency string, fileContent string, maxBatchSize 
 
 		if len(currentBatch) == maxBatchSize || i == totalBets-1 {
 			lastBatch := (i == totalBets-1)
-			time.Sleep(loopTime)
 			if err := SendBatch(conn, currentBatch, agency, lastBatch); err != nil {
 				return fmt.Errorf("failed to send batch: %v", err)
 			}
