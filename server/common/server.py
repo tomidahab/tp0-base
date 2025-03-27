@@ -2,6 +2,7 @@ import socket
 import logging
 import signal
 import os
+import multiprocessing
 from common.utils import Bet, load_bets, store_bets, has_won
 
 CLIENT_TOTAL = int(os.environ.get("CLIENT_TOTAL", 5))
@@ -17,6 +18,8 @@ class Server:
         self.running = True # to stop the server loop during shutdown
         self.ended_clients = 0
         self.open_sockets = {}
+        self._lock = multiprocessing.Lock()
+        self._handles = []
 
         signal.signal(signal.SIGTERM, self.__shutdown_server)
 
@@ -34,16 +37,28 @@ class Server:
                     self.__close_server()
                     return
                 self._client_sockets.append(client_sock)
-                self.__handle_client_connection(client_sock)
+
+                handle = multiprocessing.Process(
+                    target=self.__handle_client_connection,
+                    args=(client_sock)
+                    )
+                handle.start()
+                self._handles.append(handle)
 
                 if self.ended_clients == CLIENT_TOTAL:
                     winners_dic = self.__find_winners()
                     self.__send_winners(winners_dic)
                     self.__close_sockets()
-            except:
+            except Exception as e:
                 if not self.running:
                     return
-            
+                logging.Info(f"ERROR in server: {e}")
+                break 
+    
+        for handle in self._handles:
+            handle.join()
+
+        self.__close_server()
 
     def __close_sockets(self):
         for socket in self.open_sockets:
