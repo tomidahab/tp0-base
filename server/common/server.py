@@ -59,8 +59,9 @@ class Server:
         self.__close_server()
 
     def __close_sockets(self):
-        for socket in self.open_sockets:
-            socket.close()
+        for sock in self.open_sockets.values():
+            sock.close()
+
 
 
     def __send_winners(self, winners):
