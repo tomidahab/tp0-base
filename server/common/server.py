@@ -2,7 +2,7 @@ import socket
 import logging
 import signal
 import os
-import multiprocessing
+import threading
 from common.utils import Bet, load_bets, store_bets, has_won
 
 CLIENT_TOTAL = int(os.environ.get("CLIENT_TOTAL", 5))
@@ -17,10 +17,9 @@ class Server:
         self._client_sockets = []
         self.running = True # to stop the server loop during shutdown
         self.ended_clients = 0
-        manager = multiprocessing.Manager()
-        self.open_sockets = manager.dict()
-        self._lock = multiprocessing.Lock()
-        self._handles = []
+        self.open_sockets = {}
+        self._lock = threading.Lock()
+        self._threads = []
 
         signal.signal(signal.SIGTERM, self.__shutdown_server)
 
@@ -37,27 +36,24 @@ class Server:
                 if client_sock is not None:
                     self._client_sockets.append(client_sock)
 
-                    handle = multiprocessing.Process(
-                        target=self.__handle_client_connection,
-                        args=(client_sock,)
-                        )
-                    handle.start()
-                    self._handles.append(handle)
+                    t = threading.Thread(target=self.__handle_client_connection, args=(client_sock,))
+                    t.start()
+                    self._threads.append(t)
 
+                with self._lock:
                     if self.ended_clients == CLIENT_TOTAL:
                         winners_dic = self.__find_winners()
                         self.__send_winners(winners_dic)
                         self.__close_sockets()
-                elif self.ended_clients == CLIENT_TOTAL:
-                    self.__close_server()
+                        self.running = False
             except Exception as e:
                 if not self.running:
                     return
                 logging.info(f"ERROR in server: {e}")
                 break 
     
-        for handle in self._handles:
-            handle.join()
+        for t in self._threads:
+            t.join()
 
         self.__close_server()
 
@@ -126,16 +122,16 @@ class Server:
                 if lastBatch:
                     break
 
-            self._lock.acquire()
-            store_bets(allBets)
-            self._lock.release()
+            with self._lock:
+                store_bets(allBets)
 
             agency = allBets[0].agency
         except Exception as e:
             logging.error(f"action: handle_client_connection | result: fail | error: {e}")
         finally:
-            #client_sock.close()
-            self.open_sockets[agency] = client_sock
+            with self._lock:
+                self.open_sockets[agency] = client_sock
+                self.ended_clients += 1
 
         # Generar log consolidado al final
         logging.info(f"action: apuesta_recibida | result: success | cantidad: {len(allBets)}")
@@ -162,7 +158,6 @@ class Server:
             lastBatch = True
             lines = lines[:-1]  # Remover la línea 'END'
             batchMessage = "\n".join(lines)
-            self.ended_clients += 1
 
         self.__send_confirmation(client_sock, len(lines))
         
