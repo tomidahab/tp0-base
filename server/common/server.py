@@ -39,7 +39,7 @@ class Server:
 
                     handle = multiprocessing.Process(
                         target=self.__handle_client_connection,
-                        args=(client_sock)
+                        args=(client_sock,)
                         )
                     handle.start()
                     self._handles.append(handle)
@@ -51,7 +51,7 @@ class Server:
             except Exception as e:
                 if not self.running:
                     return
-                logging.Info(f"ERROR in server: {e}")
+                logging.info(f"ERROR in server: {e}")
                 break 
     
         for handle in self._handles:
