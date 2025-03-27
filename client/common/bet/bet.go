@@ -184,7 +184,7 @@ func SendBatch(conn net.Conn, bets []Bet, agency string, lastBatch bool) error {
 
 
 // ProcessFile procesa el archivo de texto y envía las apuestas en batchs.
-func ProcessFile(conn net.Conn, agency string, fileContent string, maxBatchSize int, loopTime int) error {
+func ProcessFile(conn net.Conn, agency string, fileContent string, maxBatchSize int) error {
 	lines := strings.Split(strings.TrimSpace(fileContent), "\n")
 	totalBets := len(lines)
 
