@@ -17,7 +17,8 @@ class Server:
         self._client_sockets = []
         self.running = True # to stop the server loop during shutdown
         self.ended_clients = 0
-        self.open_sockets = {}
+        manager = multiprocessing.Manager()
+        self.open_sockets = manager.dict()
         self._lock = multiprocessing.Lock()
         self._handles = []
 
