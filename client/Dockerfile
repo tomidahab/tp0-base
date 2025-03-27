@@ -9,6 +9,7 @@ LABEL intermediateStageToBeDeleted=true
 
 RUN mkdir -p /build
 WORKDIR /build/
+COPY ../go.mod ../go.sum ./
 COPY . .
 # CGO_ENABLED must be disabled to run go binary in Alpine
 RUN CGO_ENABLED=0 GOOS=linux go build -mod vendor -o bin/client github.com/7574-sistemas-distribuidos/docker-compose-init/client
@@ -16,5 +17,5 @@ RUN CGO_ENABLED=0 GOOS=linux go build -mod vendor -o bin/client github.com/7574-
 
 FROM busybox:latest
 COPY --from=builder /build/bin/client /client
-COPY ./client/config.yaml /config.yaml
-ENTRYPOINT ["/bin/sh"]
+#COPY ./client/config.yaml /config.yaml
+ENTRYPOINT ["/client"]

@@ -178,3 +178,88 @@ Se espera que se redacte una sección del README en donde se indique cómo ejecu
 Se proveen [pruebas automáticas](https://github.com/7574-sistemas-distribuidos/tp0-tests) de caja negra. Se exige que la resolución de los ejercicios pase tales pruebas, o en su defecto que las discrepancias sean justificadas y discutidas con los docentes antes del día de la entrega. El incumplimiento de las pruebas es condición de desaprobación, pero su cumplimiento no es suficiente para la aprobación. Respetar las entradas de log planteadas en los ejercicios, pues son las que se chequean en cada uno de los tests.
 
 La corrección personal tendrá en cuenta la calidad del código entregado y casos de error posibles, se manifiesten o no durante la ejecución del trabajo práctico. Se pide a los alumnos leer atentamente y **tener en cuenta** los criterios de corrección informados  [en el campus](https://campusgrado.fi.uba.ar/mod/page/view.php?id=73393).
+
+
+## Solucion Propuesta
+### **Funcionamiento del Protocolo**
+
+1. **Inicio de la Conexión:**
+   - El cliente establece una conexión con el servidor utilizando sockets TCP.
+
+2. **Intercambio de Datos:**
+   - **Tamaño del Batch:**
+     - El cliente inicia enviando un número de 2 bytes en formato **Big Endian**.
+     - Este número indica el tamaño en bytes del batch (conjunto de apuestas) que se enviará a continuación.
+   - **Batch de Apuestas:**
+     - Después del tamaño, el cliente envía un batch de apuestas de la cantidad de bytes especificada.
+     - El servidor lee y procesa estas apuestas.
+
+3. **Finalización del Envío:**
+   - Cuando un cliente no tiene más apuestas que enviar, envía un batch especial que contiene el mensaje `END\n`.
+   - Al recibir este mensaje, el servidor entiende que el cliente ha terminado de enviar apuestas.
+
+4. **Finalización Global:**
+   - Una vez que todos los clientes han enviado `END\n`, el servidor procede a realizar el sorteo basado en las apuestas recibidas.
+
+Este diseño asegura que:
+- La comunicación es eficiente, enviando solo los datos necesarios.
+- El servidor puede identificar claramente cuándo un cliente ha terminado su participación.
+
+---
+
+## **Mecanismos de Concurrencia**
+
+El programa utiliza **mecanismos de sincronización** para garantizar la integridad de los datos y evitar conflictos entre múltiples hilos concurrentes.
+
+En el servidor, las operaciones de almacenamiento (`store_bets`) y carga de apuestas (`load_bets`) son consideradas **secciones críticas**, ya que múltiples clientes pueden intentar acceder a estas al mismo tiempo.
+
+### **Solución Implementada**
+- Se utiliza la librería `threading` de Python para implementar **bloqueos mutex** que garantizan exclusividad en las secciones críticas.
+- Los mecanismos específicos son:
+  - **Lock:**
+    - Un hilo adquiere el bloqueo antes de acceder a `store_bets` o `load_bets`.
+    - Otros hilos deben esperar a que el bloqueo se libere para acceder a estas secciones.
+  - **Unlock:**
+    - El bloqueo se libera inmediatamente después de completar la operación crítica, permitiendo que otros hilos procedan.
+
+### **Flujo Concurrente**
+1. El servidor ejecuta un hilo para cada cliente conectado.
+2. Cada hilo maneja el intercambio de datos del cliente correspondiente:
+   - Leer el tamaño del batch.
+   - Procesar el batch de apuestas.
+   - Detectar el mensaje `END\n` y registrar que el cliente ha terminado.
+3. Durante las operaciones críticas (almacenar y cargar apuestas), se utiliza el bloqueo mutex para asegurar que:
+   - Ningún hilo sobrescribe datos de otro.
+   - Los datos permanecen consistentes.
+
+### **Resultados**
+- **Seguridad:** Se evita cualquier conflicto de concurrencia.
+- **Eficiencia:** Los hilos pueden operar en paralelo fuera de las secciones críticas.
+- **Escalabilidad:** El diseño soporta múltiples clientes sin afectar la integridad de los datos.
+
+
+## **Proceso de Sorteo**
+
+El sorteo se realiza **una vez que han terminado todos los clientes**.
+
+### **Cálculo y Envío de Ganadores**
+
+1. **Cálculo de Ganadores:**
+   - El servidor calcula los ganadores por cada agencia, procesando las apuestas recibidas.
+
+2. **Envío de Resultados a las Agencias:**
+   - Se envían **4 bytes** a cada agencia indicando la cantidad de ganadores.
+   - Si el número de ganadores es mayor que 0:
+     - Se envía otro mensaje que contiene los documentos de los ganadores.
+     - Este mensaje tiene un tamaño en bytes igual a `4 × número de documentos`.
+   - Si no hay ganadores (0 ganadores), el mensaje con documentos no se envía.
+
+### **Flujo del Sorteo**
+1. El servidor calcula los ganadores por agencia.
+2. Envío de resultados:
+   - Envío del número de ganadores (4 bytes).
+   - Condicionalmente, envío de documentos de ganadores.
+3. Finalización del proceso de sorteo.
+
+Este diseño asegura que las agencias reciban únicamente los datos relevantes, optimizando la comunicación y minimizando el tráfico innecesario.
+
