@@ -48,6 +48,8 @@ class Server:
                         winners_dic = self.__find_winners()
                         self.__send_winners(winners_dic)
                         self.__close_sockets()
+                elif self.ended_clients == CLIENT_TOTAL:
+                    self.__close_server()
             except Exception as e:
                 if not self.running:
                     return
