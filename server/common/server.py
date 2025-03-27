@@ -124,7 +124,9 @@ class Server:
                 if lastBatch:
                     break
 
+            self._lock.acquire()
             store_bets(allBets)
+            self._lock.release()
 
             agency = allBets[0].agency
         except Exception as e:
