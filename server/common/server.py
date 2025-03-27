@@ -33,22 +33,20 @@ class Server:
         while self.running:
             try:
                 client_sock = self.__accept_new_connection()
-                if client_sock == None:
-                    self.__close_server()
-                    return
-                self._client_sockets.append(client_sock)
+                if client_sock is not None:
+                    self._client_sockets.append(client_sock)
 
-                handle = multiprocessing.Process(
-                    target=self.__handle_client_connection,
-                    args=(client_sock)
-                    )
-                handle.start()
-                self._handles.append(handle)
+                    handle = multiprocessing.Process(
+                        target=self.__handle_client_connection,
+                        args=(client_sock)
+                        )
+                    handle.start()
+                    self._handles.append(handle)
 
-                if self.ended_clients == CLIENT_TOTAL:
-                    winners_dic = self.__find_winners()
-                    self.__send_winners(winners_dic)
-                    self.__close_sockets()
+                    if self.ended_clients == CLIENT_TOTAL:
+                        winners_dic = self.__find_winners()
+                        self.__send_winners(winners_dic)
+                        self.__close_sockets()
             except Exception as e:
                 if not self.running:
                     return
