@@ -263,3 +263,15 @@ El sorteo se realiza **una vez que han terminado todos los clientes**.
 
 Este diseño asegura que las agencias reciban únicamente los datos relevantes, optimizando la comunicación y minimizando el tráfico innecesario.
 
+
+# Correcciones
+
+1. Se separo la logica de comunicacion y la de business en el server.
+
+2. Se saco el timeout en el socket del servidor y se usa threading.Condition para esperar a que todos los clientes termine para solucionar el busy wait.
+
+3. En el cliente se cambio la lectura completa del archivo por un lectura por linea para no cargar todo el archivo en memoria
+
+4. En el servidor se cambio la lectura de best para no poner toda la lista de bets en memoria
+
+5. Se mejoro el manejo de lecturas y escrituras en client, chequeando que el read/write haya hecho read/write de la correcta cantidad de bytes.
