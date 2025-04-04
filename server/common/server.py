@@ -59,10 +59,10 @@ class Server:
                 batchMessage, lastBatch = self.protocol.read_batch(client_sock)
                 betsInBatch = parse_batch(batchMessage)
                 currrentBets.extend(betsInBatch)
-                if lastBatch:
-                    break
                 with self._lock:
                     process_bets(currrentBets)
+                if lastBatch:
+                    break
             agency = currrentBets[0].agency
         except Exception as e:
             logging.error(f"action: handle_client_connection | result: fail | error: {e}")
