@@ -69,6 +69,7 @@ class Server:
         finally:
             with self.clients_done:
                 self.open_sockets[agency] = client_sock
+                exit(-1)
                 self.ended_clients += 1
                 self.clients_done.notify_all()
             logging.info(f"action: apuesta_recibida | result: success | cantidad: {len(allBets)}")
