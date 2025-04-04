@@ -1,6 +1,7 @@
 package bet
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/binary"
 	"fmt"
@@ -22,7 +23,6 @@ type Bet struct {
 	Numero     string
 }
 
-// makeMsg arma el mensaje individual de una apuesta.
 func makeMsg(bet Bet, agency string) string {
 	return fmt.Sprintf(
 		"%s,%s,%s,%s,%s,%s\n",
@@ -63,8 +63,7 @@ func SendBatch(conn net.Conn, bets []Bet, agency string, lastBatch bool) error {
 	}
 	
 	for _, bet := range bets {
-		betMessage := makeMsg(bet, agency)
-		batchMessage.WriteString(betMessage)
+		batchMessage.WriteString(makeMsg(bet, agency))
 	}
 	
 	if lastBatch {
@@ -77,7 +76,7 @@ func SendBatch(conn net.Conn, bets []Bet, agency string, lastBatch bool) error {
 	if messageLength > 0xFFFF {
 		return fmt.Errorf("batch message too large, exceeds maximum size of 65535 bytes")
 	}
-
+	
 	buffer := new(bytes.Buffer)
 	
 	if err := binary.Write(buffer, binary.BigEndian, uint16(messageLength)); err != nil {
@@ -111,74 +110,61 @@ func SendBatch(conn net.Conn, bets []Bet, agency string, lastBatch bool) error {
 		}
 		log.Infof("action: consulta_ganadores | result: success | cant_ganadores: %v", len(winners))
 	}
-
-	/*for _, bet := range bets {
-		log.Infof("action: apuesta_enviada | result: success | dni: %s | numero: %s", bet.DNI, bet.Numero) COMMENT FOR NOW
-	}*/
-
 	return nil
 }
 
-
-// ProcessFile procesa el archivo de texto y envía las apuestas en batchs.
-func ProcessFile(conn net.Conn, agency string, fileContent string, maxBatchSize int, loopTime time.Duration) error {
-	lines := strings.Split(strings.TrimSpace(fileContent), "\n")
-	totalBets := len(lines)
-	
-	if totalBets == 0 {
-		return fmt.Errorf("file is empty or has no valid bets")
-	}
-	
-
+func ProcessFileFromReader(conn net.Conn, agency string, r io.Reader, maxBatchSize int) error {
+	scanner := bufio.NewScanner(r)
 	var currentBatch []Bet
-	for i, line := range lines {
-
+	for scanner.Scan() {
+		line := scanner.Text()
 		parts := strings.Split(line, ",")
 		if len(parts) != 5 {
-			return fmt.Errorf("invalid bet format on line %d", i+1)
+			return fmt.Errorf("invalid bet format")
 		}
-		
-		bet := Bet{
+		currentBatch = append(currentBatch, Bet{
 			Nombre:     parts[0],
 			Apellido:   parts[1],
 			DNI:        parts[2],
 			Nacimiento: parts[3],
 			Numero:     parts[4],
-		}
-		
-		currentBatch = append(currentBatch, bet)
-		
-		if len(currentBatch) == maxBatchSize || i == totalBets-1 {
-			lastBatch := (i == totalBets-1)
-			if err := SendBatch(conn, currentBatch, agency, lastBatch); err != nil {
-				return fmt.Errorf("failed to send batch: %v", err)
+		})
+		if len(currentBatch) == maxBatchSize {
+			if err := SendBatch(conn, currentBatch, agency, false); err != nil {
+				return err
 			}
-			currentBatch = []Bet{}
+			currentBatch = currentBatch[:0]
 		}
 	}
-	
+	if err := scanner.Err(); err != nil {
+		return err
+	}
+	if len(currentBatch) > 0 {
+		if err := SendBatch(conn, currentBatch, agency, true); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
 func ReceiveConfirmation(conn net.Conn) (int, error) {
 	lengthBytes := make([]byte, 2)
-	if sizeRead, err := io.ReadFull(conn, lengthBytes); err != nil; sizeRead == 2 {
+	if sizeRead, err := io.ReadFull(conn, lengthBytes); err != nil || sizeRead != 2 {
 		return 0, fmt.Errorf("failed to read confirmation length: %v", err)
 	}
-
+	
 	var length uint16
 	if err := binary.Read(bytes.NewReader(lengthBytes), binary.BigEndian, &length); err != nil {
 		return 0, fmt.Errorf("failed to parse confirmation length: %v", err)
 	}
-
+	
 	return int(length), nil
 }
 
 
 func ReceiveWinners(conn net.Conn) ([]int, error) {
 	countBytes := make([]byte, 4)
-
-	if sizeRead, err := io.ReadFull(conn, countBytes); err != nil; sizeRead == 4 {
+	if sizeRead, err := io.ReadFull(conn, countBytes); err != nil || sizeRead != 4 {
 		return []int{}, nil
 	}
 	
@@ -190,8 +176,7 @@ func ReceiveWinners(conn net.Conn) ([]int, error) {
 	
 	totalBytes := int(count) * 4
 	documentBytes := make([]byte, totalBytes)
-	
-	if sizeRead, err := io.ReadFull(conn, documentBytes); err != nil; sizeRead == totalBytes {
+	if sizeRead, err := io.ReadFull(conn, documentBytes); err != nil || sizeRead != totalBytes {
 		return nil, fmt.Errorf("failed to read winners documents: %v", err)
 	}
 	

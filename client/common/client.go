@@ -52,11 +52,12 @@ func (c *Client) StartClientLoop() {
 	
 	fileName := fmt.Sprintf("agency-%s.csv", c.config.ID)
 
-	fileContent, err := os.ReadFile(fileName)
+	file, err := os.Open(fileName)
 	if err != nil {
 		log.Errorf("action: read_file | result: fail | client_id: %v | error: %v", c.config.ID, err)
 		os.Exit(1)
 	}
+	defer file.Close() //Cerrar dsps que termine la fucnion
 
 	if c.stopped == true {
 		return
@@ -72,7 +73,7 @@ func (c *Client) StartClientLoop() {
 		return
 	}
 
-	if err := bet.ProcessFile(c.conn, c.config.ID, string(fileContent), c.config.MaxBatch, c.config.LoopPeriod); err != nil { 
+	if err := bet.ProcessFileFromReader(c.conn, c.config.ID, file, c.config.MaxBatch); err != nil {
 		log.Errorf("action: process_file | result: fail | client_id: %v | error: %v", c.config.ID, err)
 		c.conn.Close()
 		os.Exit(1)
