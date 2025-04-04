@@ -55,15 +55,14 @@ class Server:
         agency = None
         try:
             while True:
-                currrentBets = []
                 batchMessage, lastBatch = self.protocol.read_batch(client_sock)
                 betsInBatch = parse_batch(batchMessage)
-                currrentBets.extend(betsInBatch)
                 with self._lock:
-                    process_bets(currrentBets)
+                    process_bets(betsInBatch)
+                if agency is None and betsInBatch:
+                    agency = betsInBatch[0].agency
                 if lastBatch:
                     break
-            agency = currrentBets[0].agency
         except Exception as e:
             logging.error(f"action: handle_client_connection | result: fail | error: {e}")
         finally:
@@ -71,7 +70,8 @@ class Server:
                 self.open_sockets[agency] = client_sock
                 self.ended_clients += 1
                 self.clients_done.notify_all()
-            logging.info(f"action: apuesta_recibida | result: success | cantidad: {len(currrentBets)}")
+            logging.info(f"action: apuesta_recibida | result: success | cantidad: {len(betsInBatch)}")
+
 
     def __send_winners(self, winners_dic):
         for agency, documents in winners_dic.items():
