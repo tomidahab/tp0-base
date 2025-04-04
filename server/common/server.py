@@ -4,8 +4,8 @@ import logging
 import signal
 import os
 import threading
-from protocol import ProtocolHandler
-from business import parse_batch, process_bets, find_winners
+from common.protocol import ProtocolHandler
+from common.business import parse_batch, process_bets, find_winners
 
 CLIENT_TOTAL = int(os.environ.get("CLIENT_TOTAL", 5))
 TIMEOUT = int(os.environ.get("TIMEOUT", 10))
